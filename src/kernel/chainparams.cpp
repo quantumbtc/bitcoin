@@ -84,11 +84,6 @@ consensus.sis_w = 64;
 consensus.sis_genesis_any_solution = true; 
         consensus.nSubsidyHalvingInterval = 210000;
         
-        //consensus.script_flag_exceptions.emplace( // BIP16 exception
-        //    uint256{"00000000000002dc756eebf4f49723ed8d30cc28a5f108eb94b1ba88ac4f9c22"}, SCRIPT_VERIFY_NONE);
-        //consensus.script_flag_exceptions.emplace( // Taproot exception
-        //    uint256{"0000000000000000000f14c35b2d841e986ab5441de8c585d5ffe55ea1e395ad"}, SCRIPT_VERIFY_P2SH | SCRIPT_VERIFY_WITNESS);
-        
             consensus.BIP34Height = 0;
         consensus.BIP34Hash = uint256();
         consensus.BIP65Height = 0; // 000000000000000004c2b624ed5d7756c508d90fd0da2c7c679febfa6c4735f0
@@ -117,9 +112,6 @@ consensus.sis_genesis_any_solution = true;
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].threshold = 1815; // 90%
         consensus.vDeployments[Consensus::DEPLOYMENT_TAPROOT].period = 2016;
 
-        //consensus.nMinimumChainWork = uint256{"0000000000000000000000000000000000000000b1f3b93b65b16d035a82be84"};
-        //consensus.defaultAssumeValid = uint256{"00000000000000000001b658dd1120e82e66d2790811f89ede9742ada3ed6d77"}; // 886157
-
         /**
          * The message start string is designed to be unlikely to occur in normal data.
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
@@ -129,7 +121,7 @@ consensus.sis_genesis_any_solution = true;
         pchMessageStart[1] = 0xbe;
         pchMessageStart[2] = 0xb4;
         pchMessageStart[3] = 0xd9;
-        nDefaultPort = 8333;
+        nDefaultPort = 28333;
         nPruneAfterHeight = 100000;
         m_assumed_blockchain_size = 720;
         m_assumed_chain_state_size = 14;
@@ -139,16 +131,17 @@ consensus.sis_genesis_any_solution = true;
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
 
-//         uint32_t nonce = 0;
-// while(true) {
-//     CBlock genesis = CreateGenesisBlock(1755913406, nonce, 0x1e0ffff0, 1, 50 * COIN);
-    
-//     if(UintToArith256(genesis.GetHash())<UintToArith256(consensus.powLimit)) {
-//         std::cout << "Found genesis nonce: " << nonce << ", hash=" << genesis.GetHash().ToString() << ",hashMerkleRoot=" << genesis.hashMerkleRoot.ToString() << "\n";
-//         break;
-//     }
-//     nonce++;
-// }
+        uint32_t nonce = 0;
+while(true) {
+    CBlock genesis = CreateGenesisBlock(1755913406, nonce, 0x1e0ffff0, 1, 50 * COIN);
+
+    if(CheckProofOfWork(genesis, consensus)) {
+    //if(UintToArith256(genesis.GetHash())<UintToArith256(consensus.powLimit)) {
+        std::cout << "Found genesis nonce: " << nonce << ", hash=" << genesis.GetHash().ToString() << ",hashMerkleRoot=" << genesis.hashMerkleRoot.ToString() << "\n";
+        break;
+    }
+    nonce++;
+}
 
         consensus.hashGenesisBlock = genesis.GetHash();
 
@@ -160,17 +153,15 @@ consensus.sis_genesis_any_solution = true;
         // This is fine at runtime as we'll fall back to using them as an addrfetch if they don't support the
         // service bits we want, but we should get them updated to support all service bits wanted by any
         // release ASAP to avoid it where possible.
-        vSeeds.emplace_back("seed.bit.network."); // Pieter Wuille, only supports x1, x5, x9, and xd
+        vSeeds.emplace_back("seed.bitquantum.network."); // Pieter Wuille, only supports x1, x5, x9, and xd
 
-        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,0);
-        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,5);
-        base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,128);
+        base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1, 0x1B);
+        base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1, 0x55);
+        base58Prefixes[SECRET_KEY] = std::vector<unsigned char>(1, 0x9B);
         base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x88, 0xB2, 0x1E};
         base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x88, 0xAD, 0xE4};
 
-        bech32_hrp = "bc";
-
-        vFixedSeeds = std::vector<uint8_t>(std::begin(chainparams_seed_main), std::end(chainparams_seed_main));
+        bech32_hrp = "btq";
 
         fDefaultConsistencyChecks = false;
         m_is_mockable_chain = false;
@@ -180,9 +171,9 @@ consensus.sis_genesis_any_solution = true;
 
         chainTxData = ChainTxData{
             // Data from RPC: getchaintxstats 4096 00000000000000000001b658dd1120e82e66d2790811f89ede9742ada3ed6d77
-            .nTime    = 1741017141,
-            .tx_count = 1161875261,
-            .dTxRate  = 4.620728156243148,
+            .nTime    = 0,
+            .tx_count = 0,
+            .dTxRate  = 0,
         };
     }
 };
@@ -251,11 +242,7 @@ public:
         vFixedSeeds.clear();
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.emplace_back("testnet-seed.bitcoin.jonasschnelli.ch.");
-        vSeeds.emplace_back("seed.tbtc.petertodd.net.");
-        vSeeds.emplace_back("seed.testnet.bitcoin.sprovoost.nl.");
-        vSeeds.emplace_back("testnet-seed.bluematt.me."); // Just a static list of stable node(s), only supports x9
-        vSeeds.emplace_back("seed.testnet.achownodes.xyz."); // Ava Chow, only supports x1, x5, x9, x49, x809, x849, xd, x400, x404, x408, x448, xc08, xc48, x40c
+        vSeeds.emplace_back("seed.bitquantum.network.");
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
@@ -346,8 +333,7 @@ public:
         vFixedSeeds.clear();
         vSeeds.clear();
         // nodes with support for servicebits filtering should be at the top
-        vSeeds.emplace_back("seed.testnet4.bitcoin.sprovoost.nl."); // Sjors Provoost
-        vSeeds.emplace_back("seed.testnet4.wiz.biz."); // Jason Maurice
+        vSeeds.emplace_back("seed.bitquantum.network."); // Sjors Provoost
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
@@ -472,12 +458,6 @@ public:
         //assert(genesis.hashMerkleRoot == uint256{"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"});
 
         m_assumeutxo_data = {
-            {
-                .height = 160'000,
-                .hash_serialized = AssumeutxoHash{uint256{"fe0a44309b74d6b5883d246cb419c6221bcccf0b308c9b59b7d70783dbdf928a"}},
-                .m_chain_tx_count = 2289496,
-                .blockhash = consteval_ctor(uint256{"0000003ca3c99aff040f2563c2ad8f8ec88bd0fd6b8f0895cfaf1ef90353a62c"}),
-            }
         };
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
@@ -584,32 +564,12 @@ public:
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();
-        vSeeds.emplace_back("dummySeed.invalid.");
+        vSeeds.emplace_back("seed.bitquantum.network.");
 
         fDefaultConsistencyChecks = true;
         m_is_mockable_chain = true;
 
         m_assumeutxo_data = {
-            {   // For use by unit tests
-                .height = 110,
-                .hash_serialized = AssumeutxoHash{uint256{"b952555c8ab81fec46f3d4253b7af256d766ceb39fb7752b9d18cdf4a0141327"}},
-                .m_chain_tx_count = 111,
-                .blockhash = consteval_ctor(uint256{"6affe030b7965ab538f820a56ef56c8149b7dc1d1c144af57113be080db7c397"}),
-            },
-            {
-                // For use by fuzz target src/test/fuzz/utxo_snapshot.cpp
-                .height = 200,
-                .hash_serialized = AssumeutxoHash{uint256{"17dcc016d188d16068907cdeb38b75691a118d43053b8cd6a25969419381d13a"}},
-                .m_chain_tx_count = 201,
-                .blockhash = consteval_ctor(uint256{"385901ccbd69dff6bbd00065d01fb8a9e464dede7cfe0372443884f9b1dcf6b9"}),
-            },
-            {
-                // For use by test/functional/feature_assumeutxo.py
-                .height = 299,
-                .hash_serialized = AssumeutxoHash{uint256{"d2b051ff5e8eef46520350776f4100dd710a63447a8e01d917e92e79751a63e2"}},
-                .m_chain_tx_count = 334,
-                .blockhash = consteval_ctor(uint256{"7cc695046fec709f8c9394b6f928f81e81fd3ac20977bb68760fa1faa7916ea2"}),
-            },
         };
 
         chainTxData = ChainTxData{

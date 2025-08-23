@@ -240,33 +240,13 @@ std::optional<arith_uint256> DeriveTarget(unsigned int nBits, const uint256 pow_
     return bnTarget;
 }
 
-bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
-{
-    LogPrintf("CheckProofOfWork: hash: %s\n", hash.ToString());
-    LogPrintf("CheckProofOfWork: nBits: %d\n", nBits);
-    LogPrintf("CheckProofOfWork: params.powLimit: %s\n", params.powLimit.ToString());
-    
-    auto bnTarget{DeriveTarget(nBits, params.powLimit)};
-
-    if (!bnTarget) return false;
-
-    LogPrintf("CheckProofOfWork: bnTarget: %s\n", bnTarget->ToString());
-    
-
-    // Check proof of work matches claimed amount
-    if (UintToArith256(hash) > *bnTarget)
-        return false;
-
-    return true;
-}
-
 bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Params& params)
 {
     auto bnTarget{DeriveTarget(nBits, params.powLimit)};
     if (!bnTarget) return false;
 
     // Check proof of work matches claimed amount
-    if (UintToArith256(hash) > bnTarget)
+    if (UintToArith256(hash) > *bnTarget)
         return false;
 
     return true;
