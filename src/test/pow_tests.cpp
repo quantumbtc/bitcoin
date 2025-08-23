@@ -8,7 +8,7 @@
 #include <test/util/random.h>
 #include <test/util/setup_common.h>
 #include <util/chaintype.h>
-
+#include <primitives/block.h>
 #include <boost/test/unit_test.hpp>
 
 BOOST_FIXTURE_TEST_SUITE(pow_tests, BasicTestingSetup)
@@ -87,7 +87,8 @@ BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_negative_target)
     unsigned int nBits;
     nBits = UintToArith256(consensus.powLimit).GetCompact(true);
     hash = uint256{1};
-    BOOST_CHECK(!CheckProofOfWork(hash, nBits, consensus));
+    CBlockHeader header;
+    BOOST_CHECK(!CheckProofOfWork(header, consensus));
 }
 
 BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_overflow_target)
@@ -96,7 +97,8 @@ BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_overflow_target)
     uint256 hash;
     unsigned int nBits{~0x00800000U};
     hash = uint256{1};
-    BOOST_CHECK(!CheckProofOfWork(hash, nBits, consensus));
+    CBlockHeader header;
+    BOOST_CHECK(!CheckProofOfWork(header, consensus));
 }
 
 BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_too_easy_target)
@@ -108,7 +110,8 @@ BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_too_easy_target)
     nBits_arith *= 2;
     nBits = nBits_arith.GetCompact();
     hash = uint256{1};
-    BOOST_CHECK(!CheckProofOfWork(hash, nBits, consensus));
+    CBlockHeader header;
+    BOOST_CHECK(!CheckProofOfWork(header, consensus));
 }
 
 BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_biger_hash_than_target)
@@ -120,7 +123,8 @@ BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_biger_hash_than_target)
     nBits = hash_arith.GetCompact();
     hash_arith *= 2; // hash > nBits
     hash = ArithToUint256(hash_arith);
-    BOOST_CHECK(!CheckProofOfWork(hash, nBits, consensus));
+    CBlockHeader header;
+    BOOST_CHECK(!CheckProofOfWork(header, consensus));
 }
 
 BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_zero_target)
@@ -131,7 +135,8 @@ BOOST_AUTO_TEST_CASE(CheckProofOfWork_test_zero_target)
     arith_uint256 hash_arith{0};
     nBits = hash_arith.GetCompact();
     hash = ArithToUint256(hash_arith);
-    BOOST_CHECK(!CheckProofOfWork(hash, nBits, consensus));
+    CBlockHeader header;
+    BOOST_CHECK(!CheckProofOfWork(header, consensus));
 }
 
 BOOST_AUTO_TEST_CASE(GetBlockProofEquivalentTime_test)

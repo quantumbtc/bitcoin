@@ -190,6 +190,8 @@ public:
     uint32_t nBits{0};
     uint32_t nNonce{0};
 
+    CBlockHeader _block;
+
     //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
     int32_t nSequenceId{0};
 
@@ -201,7 +203,7 @@ public:
           hashMerkleRoot{block.hashMerkleRoot},
           nTime{block.nTime},
           nBits{block.nBits},
-          nNonce{block.nNonce}
+          nNonce{block.nNonce},_block{block}
     {
     }
 
