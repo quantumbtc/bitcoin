@@ -15,7 +15,7 @@
 #include "hash.h"
 
 static void BuildSeedFromHeader(const CBlockHeader& h, std::vector<unsigned char>& seed) {
-    CHashWriter ss(SER_GETHASH, 0);
+    HashWriter ss{};
     ss << h.nVersion << h.hashPrevBlock << h.hashMerkleRoot << h.nTime << h.nBits << h.nNonce;
     // Do NOT include vchPowSolution here for instance derivation, or include if you want solution to affect A,b.
     // We'll **include nonce & header fields** so miners vary nonce to get different A/b.
