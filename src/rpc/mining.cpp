@@ -1015,6 +1015,19 @@ static RPCHelpMan getblocktemplate()
         result.pushKV("default_witness_commitment", HexStr(block_template->getCoinbaseCommitment()));
     }
 
+    const auto& cp = chainparams.GetConsensus();
+if (cp.powType == Consensus::Params::PowType::LATTICE_SIS) {
+    UniValue sis(UniValue::VOBJ);
+    sis.pushKV("n", (int)cp.sis_n);
+    sis.pushKV("m", (int)cp.sis_m);
+    sis.pushKV("q", (int)cp.sis_q);
+    sis.pushKV("w", (int)cp.sis_w);
+    result.pushKV("pow_type", "lattice_sis");
+    result.pushKV("sis", sis);
+} else {
+    result.pushKV("pow_type", "sha256d");
+}
+
     return result;
 },
     };

@@ -151,6 +151,18 @@ struct Params {
         } // no default case, so the compiler can warn about missing cases
         return std::numeric_limits<int>::max();
     }
+
+        // Lattice-SIS PoW switches & params
+        enum class PowType : uint8_t { SHA256D = 0, LATTICE_SIS = 1 };
+        PowType powType = PowType::SHA256D;
+    
+        // SIS parameters (only used when powType == LATTICE_SIS)
+        uint32_t sis_n = 256;
+        uint32_t sis_m = 512;
+        uint32_t sis_q = 12289;
+        uint32_t sis_w = 64;       // Hamming weight bound
+        bool sis_genesis_any_solution = false; // relax only for genesis (ease bootstrapping)
+    
 };
 
 } // namespace Consensus

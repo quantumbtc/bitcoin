@@ -10,6 +10,18 @@
 #include <primitives/block.h>
 #include <uint256.h>
 #include <util/check.h>
+#include "chainparams.h"
+#include "crypto/lattice_sis.h"
+#include "hash.h"
+
+static void BuildSeedFromHeader(const CBlockHeader& h, std::vector<unsigned char>& seed) {
+    CHashWriter ss(SER_GETHASH, 0);
+    ss << h.nVersion << h.hashPrevBlock << h.hashMerkleRoot << h.nTime << h.nBits << h.nNonce;
+    // Do NOT include vchPowSolution here for instance derivation, or include if you want solution to affect A,b.
+    // We'll **include nonce & header fields** so miners vary nonce to get different A/b.
+    uint256 seed256 = ss.GetHash();
+    seed.assign(seed256.begin(), seed256.end());
+}
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
@@ -137,11 +149,48 @@ bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t heig
 
 // Bypasses the actual proof of work check during fuzz testing with a simplified validation checking whether
 // the most significant bit of the last byte of the hash is set.
-bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params& params)
+bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
-    if (EnableFuzzDeterminism()) return (hash.data()[31] & 0x80) == 0;
-    return CheckProofOfWorkImpl(hash, nBits, params);
+    arith_uint256 bnTarget;
+    bool fNegative; bool fOverflow;
+    bnTarget.SetCompact(block.nBits, &fNegative, &fOverflow);
+    if (fNegative || bnTarget == 0 || fOverflow) return false;
+
+    if (params.powType == Consensus::Params::PowType::LATTICE_SIS) {
+        return CheckProofOfWorkSIS(block, params, ArithToUint256(bnTarget));
+    }
+    // Legacy SHA256D
+    return UintToArith256(block.GetHash()) <= bnTarget;
 }
+
+bool CheckProofOfWorkSIS(const CBlockHeader& header, const Consensus::Params& params, const uint256& powHashTarget)
+{
+    using namespace lattice;
+    // If genesis and relaxed flag set, skip SIS strict check
+    bool is_genesis = header.hashPrevBlock.IsNull();
+    if (is_genesis && params.sis_genesis_any_solution) {
+        // check header hash meets target (header serialization includes vchPowSolution)
+        return UintToArith256(header.GetHash()) <= UintToArith256(powHashTarget);
+    }
+
+    // 1) decode solution vector x
+    std::vector<int8_t> x;
+    if (!DecodeTernary(header.vchPowSolution, params.sis_m, x)) return false;
+
+    // 2) derive A,b from header seed
+    std::vector<unsigned char> seed;
+    BuildSeedFromHeader(header, seed);
+    SISParams sp{params.sis_n, params.sis_m, params.sis_q, params.sis_w};
+    SISInstance inst;
+    DeriveInstance(seed.data(), seed.size(), sp, inst);
+
+    // 3) verify A·x = b (mod q) and weight bound
+    if (!VerifySIS(inst, sp, x)) return false;
+
+    // 4) finally check header hash (include vchPowSolution) <= target
+    return UintToArith256(header.GetHash()) <= UintToArith256(powHashTarget);
+}
+
 
 std::optional<arith_uint256> DeriveTarget(unsigned int nBits, const uint256 pow_limit)
 {

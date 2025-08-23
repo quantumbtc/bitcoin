@@ -10,6 +10,7 @@
 #include <serialize.h>
 #include <uint256.h>
 #include <util/time.h>
+#include <vector>
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
@@ -29,12 +30,19 @@ public:
     uint32_t nBits;
     uint32_t nNonce;
 
+    std::vector<unsigned char> vchPowSolution; // packed ternary (2 bits/entry)
+    
+
     CBlockHeader()
     {
         SetNull();
     }
-
-    SERIALIZE_METHODS(CBlockHeader, obj) { READWRITE(obj.nVersion, obj.hashPrevBlock, obj.hashMerkleRoot, obj.nTime, obj.nBits, obj.nNonce); }
+    
+    SERIALIZE_METHODS(CBlockHeader, obj) {
+        READWRITE(obj.nVersion, obj.hashPrevBlock, obj.hashMerkleRoot, obj.nTime, obj.nBits, obj.nNonce);
+        READWRITE(obj.vchPowSolution);
+    }
+    //SERIALIZE_METHODS(CBlockHeader, obj) { READWRITE(obj.nVersion, obj.hashPrevBlock, obj.hashMerkleRoot, obj.nTime, obj.nBits, obj.nNonce); }
 
     void SetNull()
     {

@@ -13,6 +13,18 @@ uint256 CBlockHeader::GetHash() const
     return (HashWriter{} << *this).GetHash();
 }
 
+void CBlockHeader::SetNull()
+{
+    nVersion = 0;
+    hashPrevBlock.SetNull();
+    hashMerkleRoot.SetNull();
+    nTime = 0;
+    nBits = 0;
+    nNonce = 0;
+    vchPowSolution.clear();
+}
+
+
 std::string CBlock::ToString() const
 {
     std::stringstream s;
