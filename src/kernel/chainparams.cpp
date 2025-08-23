@@ -26,6 +26,7 @@
 #include <cstring>
 #include <type_traits>
 #include <pow.h>
+#include <thread>
 
 using namespace util::hex_literals;
 
@@ -66,7 +67,39 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
 
+static const int NUM_THREADS = std::thread::hardware_concurrency();
+static std::atomic<bool> found(false);
+static std::atomic<uint64_t> totalTries(0);
+static std::mutex printMutex;
+static std::vector<unsigned char> vchPowSolution_genesis(128, 0x00);
 
+void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32_t step)
+{
+    uint32_t nonce = startNonce;
+    uint32_t nTime = GetTime();
+
+    while (!found.load()) {
+        CBlock genesis = CreateGenesisBlock(nTime, nonce, 0x1e0ffff0, 1, 50 * COIN);
+        genesis.vchPowSolution = vchPowSolution_genesis;
+        if (CheckProofOfWork(genesis, consensus)) {
+            found.store(true);
+            std::lock_guard<std::mutex> lock(printMutex);
+            std::cout << "\n==== GENESIS FOUND ====\n";
+            std::cout << "Nonce: " << nonce << "\n";
+            std::cout << "Time: " << nTime << "\n";
+            std::cout << "Hash: " << genesis.GetHash().ToString() << "\n";
+            std::cout << "MerkleRoot: " << genesis.hashMerkleRoot.ToString() << "\n";
+            break;
+        }
+        nonce += step;
+        totalTries++;
+
+        // 动态更新时间（防止固定不变）
+        if ((nonce % 100000) == 0) {
+            nTime = GetTime();
+        }
+    }
+}
 
 /**
  * Main network on which people trade goods and services.
@@ -78,11 +111,11 @@ public:
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         consensus.powType = Consensus::Params::PowType::LATTICE_SIS;
-consensus.sis_n = 256;
-consensus.sis_m = 512;
+        consensus.sis_n = 16;
+consensus.sis_m = 32;
 consensus.sis_q = 12289;
-consensus.sis_w = 64;
-consensus.sis_genesis_any_solution = true; 
+consensus.sis_w = 8;
+consensus.sis_genesis_any_solution = false; 
         consensus.nSubsidyHalvingInterval = 210000;
         
             consensus.BIP34Height = 0;
@@ -129,20 +162,63 @@ consensus.sis_genesis_any_solution = true;
 
         genesis = CreateGenesisBlock(1755913406, 1939053, 0x1e0ffff0, 1, 50 * COIN);
 
-        LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
-        LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
+         std::cout << "Genesis hash: %s\n", genesis.GetHash().ToString();
+        std::cout << "Genesis hash: %s\n", genesis.hashMerkleRoot.ToString();
 
-        uint32_t nonce = 0;
-while(true) {
-    CBlock genesis = CreateGenesisBlock(1755913406, nonce, 0x1e0ffff0, 1, 50 * COIN);
 
-    if(CheckProofOfWork(genesis, consensus)) {
-    //if(UintToArith256(genesis.GetHash())<UintToArith256(consensus.powLimit)) {
-        std::cout << "Found genesis nonce: " << nonce << ", hash=" << genesis.GetHash().ToString() << ",hashMerkleRoot=" << genesis.hashMerkleRoot.ToString() << "\n";
-        break;
-    }
-    nonce++;
-}
+       
+        std::cout << "Starting genesis miner with " << NUM_THREADS << " threads...\n";
+
+        std::vector<std::thread> threads;
+        for (int i = 0; i < NUM_THREADS; i++) {
+            threads.emplace_back(MineGenesis, std::ref(consensus), i, NUM_THREADS);
+        }
+
+        // 进度显示线程
+        std::thread progress([&]() {
+            uint64_t lastTries = 0;
+            auto lastTime = std::chrono::steady_clock::now();
+
+            while (!found.load()) {
+                std::this_thread::sleep_for(std::chrono::seconds(5));
+
+                uint64_t currentTries = totalTries.load();
+                auto now = std::chrono::steady_clock::now();
+                std::chrono::duration<double> elapsed = now - lastTime;
+
+                uint64_t diff = currentTries - lastTries;
+                double rate = diff / elapsed.count(); // H/s
+
+                // 粗略 ETA （假设平均需要 powLimit/2 次）
+                double est_total = (1ull << consensus.sis_w); // 假设搜索空间大小
+                double est_remaining = (est_total - currentTries) / (rate > 0 ? rate : 1);
+
+                std::lock_guard<std::mutex> lock(printMutex);
+                std::cout << "[Progress] Tried: " << currentTries
+                          << " | Rate: " << std::fixed << std::setprecision(2) << rate << " H/s"
+                          << " | ETA: " << (est_remaining / 60.0) << " min\n";
+
+                lastTries = currentTries;
+                lastTime = now;
+            }
+        });
+
+        for (auto& t : threads)
+            t.join();
+        progress.join();
+
+
+//        uint32_t nonce = 0;
+//while(true) {
+//    CBlock genesis = CreateGenesisBlock(1755913406, nonce, 0x1e0ffff0, 1, 50 * COIN);
+//
+//    if(CheckProofOfWork(genesis, consensus)) {
+//    //if(UintToArith256(genesis.GetHash())<UintToArith256(consensus.powLimit)) {
+//        std::cout << "Found genesis nonce: " << nonce << ", hash=" << genesis.GetHash().ToString() << ",hashMerkleRoot=" << genesis.hashMerkleRoot.ToString() << "\n";
+//        break;
+//    }
+//    nonce++;
+//}
 
         consensus.hashGenesisBlock = genesis.GetHash();
 

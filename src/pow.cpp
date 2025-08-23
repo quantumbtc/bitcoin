@@ -157,49 +157,42 @@ bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params
     bool fNegative; bool fOverflow;
     bnTarget.SetCompact(block.nBits, &fNegative, &fOverflow);
 
-    LogPrintf("CheckProofOfWork: bnTarget: %s, fNegative: %d, fOverflow: %d\n", bnTarget.ToString(), fNegative, fOverflow);
+     //std::cout << "CheckProofOfWork: bnTarget:" << bnTarget.ToString() << " fNegative :" << fNegative << " fOverflow:" << fOverflow << "\n";
 
     if (fNegative || bnTarget == 0 || fOverflow) return false;
 
-    // Add debugging for genesis block
-    if (block.hashPrevBlock.IsNull()) {
-        LogPrintf("CheckProofOfWork: Genesis block detected, hash: %s, powType: %d\n", 
-                  block.GetHash().ToString(), static_cast<int>(params.powType));
-    }
+    return CheckProofOfWorkSIS(block, params, ArithToUint256(bnTarget));
+}
 
-    if (params.powType == Consensus::Params::PowType::LATTICE_SIS) {
-        return CheckProofOfWorkSIS(block, params, ArithToUint256(bnTarget));
+void PrintInt32Vector(const std::vector<unsigned char>& vch)
+{
+    if (vch.size() % 4 != 0) {
+        std::cout << "Invalid vector size!" << std::endl;
+        return;
     }
-    // Legacy SHA256D
-    return UintToArith256(block.GetHash()) <= bnTarget;
+    std::cout << "Decoded vector = [";
+    for (size_t i = 0; i < vch.size(); i += 4) {
+        int32_t val;
+        std::memcpy(&val, &vch[i], 4);
+        std::cout << val;
+        if (i + 4 != vch.size()) std::cout << ", ";
+    }
+    std::cout << "]" << std::endl;
 }
 
 bool CheckProofOfWorkSIS(const CBlockHeader& header, const Consensus::Params& params, const uint256& powHashTarget)
 {
     using namespace lattice;
     // If genesis and relaxed flag set, skip SIS strict check
-    bool is_genesis = header.hashPrevBlock.IsNull();
-    if (is_genesis && params.sis_genesis_any_solution) {
-        // For genesis block, we need to ensure the hash meets the target
-        // Since this is a fork, we'll use a more lenient check for now
-        uint256 blockHash = header.GetHash();
-        LogPrintf("CheckProofOfWorkSIS: Genesis block validation - hash: %s, target: %s, sis_genesis_any_solution: %d\n", 
-                  blockHash.ToString(), powHashTarget.ToString(), params.sis_genesis_any_solution);
-        
-        // For genesis block, accept any hash that's not all zeros
-        // This is a temporary measure until we can generate a proper LATTICE_SIS solution
-        if (blockHash == uint256{}) {
-            LogPrintf("CheckProofOfWorkSIS: Rejecting all-zero genesis hash\n");
-            return false; // Reject all-zero hash
-        }
-        LogPrintf("CheckProofOfWorkSIS: Accepting genesis block with hash: %s\n", blockHash.ToString());
-        return true; // Accept any non-zero hash for genesis
-    }
-
+    // 
     // 1) decode solution vector x
+    //PrintInt32Vector(header.vchPowSolution);
+
+    //std::cout << "header.vchPowSolution:" << "params.sis_m:" << params.sis_m << "\n";
+
     std::vector<int8_t> x;
     if (!DecodeTernary(header.vchPowSolution, params.sis_m, x)) {
-        LogPrintf("CheckProofOfWorkSIS: Failed to decode solution vector for non-genesis block\n");
+        //std::cout << ("CheckProofOfWorkSIS: Failed to decode solution vector for non-genesis block\n");
         return false;
     }
 
@@ -212,14 +205,14 @@ bool CheckProofOfWorkSIS(const CBlockHeader& header, const Consensus::Params& pa
 
     // 3) verify A·x = b (mod q) and weight bound
     if (!VerifySIS(inst, sp, x)) {
-        LogPrintf("CheckProofOfWorkSIS: SIS verification failed for non-genesis block\n");
+        //std::cout << "CheckProofOfWorkSIS: SIS verification failed for non-genesis block\n";
         return false;
     }
 
     // 4) finally check header hash (include vchPowSolution) <= target
     uint256 finalHash = header.GetHash();
     bool result = UintToArith256(finalHash) <= UintToArith256(powHashTarget);
-    LogPrintf("CheckProofOfWorkSIS: Final hash check - hash: %s, target: %s, result: %s\n", 
+    std::cout << ("CheckProofOfWorkSIS: Final hash check - hash: %s, target: %s, result: %s\n", 
               finalHash.ToString(), powHashTarget.ToString(), result ? "PASS" : "FAIL");
     return result;
 }
