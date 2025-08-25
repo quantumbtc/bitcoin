@@ -1,0 +1,64 @@
+# 抗量子POW示例程序编译配置
+# 使用方法: make -f Makefile.quantum
+
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -pedantic
+LDFLAGS = -pthread
+
+# 目标程序
+TARGET = quantum-pow-example
+
+# 源文件
+SOURCES = quantum-pow-example.cpp
+
+# 目标文件
+OBJECTS = $(SOURCES:.cpp=.o)
+
+# 默认目标
+all: $(TARGET)
+
+# 链接目标程序
+$(TARGET): $(OBJECTS)
+	$(CXX) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
+
+# 编译源文件
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# 清理编译产物
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+# 运行程序
+run: $(TARGET)
+	./$(TARGET)
+
+# 调试版本
+debug: CXXFLAGS += -g -DDEBUG
+debug: $(TARGET)
+
+# 性能分析版本
+profile: CXXFLAGS += -pg
+profile: $(TARGET)
+
+# 安装（可选）
+install: $(TARGET)
+	cp $(TARGET) /usr/local/bin/
+
+# 卸载
+uninstall:
+	rm -f /usr/local/bin/$(TARGET)
+
+# 帮助信息
+help:
+	@echo "可用的目标:"
+	@echo "  all      - 编译程序"
+	@echo "  clean    - 清理编译产物"
+	@echo "  run      - 编译并运行程序"
+	@echo "  debug    - 编译调试版本"
+	@echo "  profile  - 编译性能分析版本"
+	@echo "  install  - 安装到系统"
+	@echo "  uninstall- 从系统卸载"
+	@echo "  help     - 显示此帮助信息"
+
+.PHONY: all clean run debug profile install uninstall help

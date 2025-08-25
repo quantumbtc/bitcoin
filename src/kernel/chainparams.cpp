@@ -117,6 +117,16 @@ public:
         consensus.sis_dynamic_r = true; // 随 nBits 调整
         consensus.sis_r_fixed = 8;      // 若改为 false 则按固定阈值校验
         consensus.sis_genesis_any_solution = false; 
+        
+        // 抗量子POW参数设置
+        consensus.quantum_n = 256;
+        consensus.quantum_q = 12289;
+        consensus.quantum_p = 3;
+        consensus.quantum_d = 64;
+        consensus.quantum_l2_threshold = 100.0;
+        consensus.quantum_linf_threshold = 50;
+        consensus.quantum_max_density = 128;
+        
         consensus.nSubsidyHalvingInterval = 210000;
         
             consensus.BIP34Height = 0;

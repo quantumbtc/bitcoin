@@ -20,6 +20,7 @@
 #include <vector>
 #include <cmath>
 #include <limits>
+#include "pow_quantum.h"
 
 void PrintInt32Vector(const std::vector<unsigned char>& vch)
 {
@@ -164,11 +165,27 @@ bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t heig
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
     if (EnableFuzzDeterminism()) return (block.GetHash().data()[31] & 0x80) == 0;
-    auto bnTarget{DeriveTarget(block.nBits, params.powLimit)};
-
-    if (!bnTarget) return false;
-    if (!CheckProofOfWorkSIS(block, params)) return false;
-    return CheckProofOfWorkImpl(block.GetHash(), block.nBits, params);
+    
+    // 根据POW类型选择验证方法
+    switch (params.powType) {
+        case Consensus::Params::PowType::SHA256D: {
+            auto bnTarget{DeriveTarget(block.nBits, params.powLimit)};
+            if (!bnTarget) return false;
+            return CheckProofOfWorkImpl(block.GetHash(), block.nBits, params);
+        }
+        case Consensus::Params::PowType::LATTICE_SIS: {
+            auto bnTarget{DeriveTarget(block.nBits, params.powLimit)};
+            if (!bnTarget) return false;
+            if (!CheckProofOfWorkSIS(block, params)) return false;
+            return CheckProofOfWorkImpl(block.GetHash(), block.nBits, params);
+        }
+        case Consensus::Params::PowType::QUANTUM_NTRU: {
+            if (!CheckQuantumProofOfWork(block, params)) return false;
+            return true; // 抗量子POW不需要额外的哈希验证
+        }
+        default:
+            return false;
+    }
 }
 
 std::optional<arith_uint256> DeriveTarget(unsigned int nBits, const uint256 pow_limit)

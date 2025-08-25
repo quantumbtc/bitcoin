@@ -153,7 +153,7 @@ struct Params {
     }
 
         // Lattice-SIS PoW switches & params
-        enum class PowType : uint8_t { SHA256D = 0, LATTICE_SIS = 1 };
+        enum class PowType : uint8_t { SHA256D = 0, LATTICE_SIS = 1, QUANTUM_NTRU = 2 };
         PowType powType = PowType::SHA256D;
     
         // SIS parameters (only used when powType == LATTICE_SIS)
@@ -164,6 +164,15 @@ struct Params {
         bool sis_dynamic_r = true;        // 
         uint32_t sis_r_fixed = 8;         // 
         bool sis_genesis_any_solution = false; // relax only for genesis (ease bootstrapping)
+    
+        // 抗量子POW参数 (仅当 powType == QUANTUM_NTRU 时使用)
+        uint32_t quantum_n = 256;         // 多项式次数
+        uint32_t quantum_q = 12289;       // 模数
+        uint32_t quantum_p = 3;           // 小模数
+        uint32_t quantum_d = 64;          // 稀疏度参数
+        double quantum_l2_threshold = 100.0;    // L2范数阈值
+        int32_t quantum_linf_threshold = 50;    // L∞范数阈值
+        uint32_t quantum_max_density = 128;     // 最大非零系数数量
     
 };
 

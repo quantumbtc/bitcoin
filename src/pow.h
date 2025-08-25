@@ -34,6 +34,9 @@ bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params
 bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Params&);
 bool CheckProofOfWorkSIS(const CBlockHeader& header, const Consensus::Params& params);
 
+/** Check whether a block satisfies the quantum-resistant proof-of-work requirement */
+bool CheckQuantumProofOfWork(const CBlockHeader& header, const Consensus::Params& params);
+
 
 /**
  * Return false if the proof-of-work requirement specified by new_nbits at a
