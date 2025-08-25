@@ -152,20 +152,8 @@ struct Params {
         return std::numeric_limits<int>::max();
     }
 
-        // Lattice-SIS PoW switches & params
-        enum class PowType : uint8_t { SHA256D = 0, LATTICE_SIS = 1, QUANTUM_NTRU = 2 };
-        PowType powType = PowType::SHA256D;
-    
-        // SIS parameters (only used when powType == LATTICE_SIS)
-        uint32_t sis_n = 256;
-        uint32_t sis_m = 512;
-        uint32_t sis_q = 12289;
-        uint32_t sis_w = 64;       // Hamming weight bound
-        bool sis_dynamic_r = true;        // 
-        uint32_t sis_r_fixed = 8;         // 
-        bool sis_genesis_any_solution = false; // relax only for genesis (ease bootstrapping)
-    
-        // 抗量子POW参数 (仅当 powType == QUANTUM_NTRU 时使用)
+        // 混合POW算法参数：传统哈希 + 抗量子算法
+        // 抗量子POW参数
         uint32_t quantum_n = 256;         // 多项式次数
         uint32_t quantum_q = 12289;       // 模数
         uint32_t quantum_p = 3;           // 小模数

@@ -108,17 +108,8 @@ public:
         m_chain_type = ChainType::MAIN;
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
-        consensus.powType = Consensus::Params::PowType::LATTICE_SIS;
-        consensus.sis_n = 256;
-        consensus.sis_m = 512;
-        consensus.sis_q = 12289;
-        consensus.sis_w = 64;
-        // 选择 r 模式：
-        consensus.sis_dynamic_r = true; // 随 nBits 调整
-        consensus.sis_r_fixed = 8;      // 若改为 false 则按固定阈值校验
-        consensus.sis_genesis_any_solution = false; 
         
-        // 抗量子POW参数设置
+        // 混合POW算法参数设置：传统哈希 + 抗量子算法
         consensus.quantum_n = 256;
         consensus.quantum_q = 12289;
         consensus.quantum_p = 3;

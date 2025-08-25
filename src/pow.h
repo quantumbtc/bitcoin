@@ -32,24 +32,5 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 /** Check whether a block hash satisfies the proof-of-work requirement specified by nBits */
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params);
 bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Params&);
-bool CheckProofOfWorkSIS(const CBlockHeader& header, const Consensus::Params& params);
-
-/** Check whether a block satisfies the quantum-resistant proof-of-work requirement */
-bool CheckQuantumProofOfWork(const CBlockHeader& header, const Consensus::Params& params);
-
-
-/**
- * Return false if the proof-of-work requirement specified by new_nbits at a
- * given height is not possible, given the proof-of-work on the prior block as
- * specified by old_nbits.
- *
- * This function only checks that the new value is within a factor of 4 of the
- * old value for blocks at the difficulty adjustment interval, and otherwise
- * requires the values to be the same.
- *
- * Always returns true on networks where min difficulty blocks are allowed,
- * such as regtest/testnet.
- */
-bool PermittedDifficultyTransition(const Consensus::Params& params, int64_t height, uint32_t old_nbits, uint32_t new_nbits);
 
 #endif // BITCOIN_POW_H
