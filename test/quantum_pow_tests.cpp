@@ -2,17 +2,16 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <test/util/setup_common.h>
-#include <pow_quantum.h>
-#include <primitives/block.h>
-#include <consensus/params.h>
-#include <util/strencodings.h>
-
 #include <boost/test/unit_test.hpp>
 
-BOOST_AUTO_TEST_SUITE(quantum_pow_tests)
+#include <pow.h>
+#include <pow_hybrid.h>
+#include <primitives/block.h>
+#include <consensus/params.h>
 
-BOOST_AUTO_TEST_CASE(quantum_pow_basic_test)
+BOOST_AUTO_TEST_SUITE(hybrid_pow_tests)
+
+BOOST_AUTO_TEST_CASE(hybrid_pow_basic_test)
 {
     // 创建测试区块头
     CBlockHeader header;
@@ -25,7 +24,7 @@ BOOST_AUTO_TEST_CASE(quantum_pow_basic_test)
     
     // 创建测试共识参数
     Consensus::Params params;
-    params.powType = Consensus::Params::PowType::QUANTUM_NTRU;
+    params.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
     params.quantum_n = 256;
     params.quantum_q = 12289;
     params.quantum_p = 3;
@@ -36,18 +35,18 @@ BOOST_AUTO_TEST_CASE(quantum_pow_basic_test)
     
     // 测试空解应该失败
     header.vchPowSolution.clear();
-    BOOST_CHECK(!CheckQuantumProofOfWork(header, params));
+    BOOST_CHECK(!CheckHybridProofOfWork(header, params));
     
     // 测试错误大小的解应该失败
     header.vchPowSolution.resize(100, 0);
-    BOOST_CHECK(!CheckQuantumProofOfWork(header, params));
+    BOOST_CHECK(!CheckHybridProofOfWork(header, params));
     
     // 测试正确大小的解（但可能无效）
     header.vchPowSolution.resize(256 * 4, 0);
-    BOOST_CHECK(!CheckQuantumProofOfWork(header, params));
+    BOOST_CHECK(!CheckHybridProofOfWork(header, params));
 }
 
-BOOST_AUTO_TEST_CASE(quantum_pow_generation_test)
+BOOST_AUTO_TEST_CASE(hybrid_pow_generation_test)
 {
     // 创建测试区块头
     CBlockHeader header;
@@ -60,7 +59,7 @@ BOOST_AUTO_TEST_CASE(quantum_pow_generation_test)
     
     // 创建测试共识参数
     Consensus::Params params;
-    params.powType = Consensus::Params::PowType::QUANTUM_NTRU;
+    params.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
     params.quantum_n = 256;
     params.quantum_q = 12289;
     params.quantum_p = 3;
@@ -71,21 +70,20 @@ BOOST_AUTO_TEST_CASE(quantum_pow_generation_test)
     
     // 尝试生成POW解
     std::vector<uint8_t> solution;
-    bool success = GenerateQuantumProofOfWork(header, params, solution);
+    bool success = GenerateHybridProofOfWork(header, params, solution);
     
     // 注意：在实际测试中，生成可能需要很长时间，所以这里只是测试接口
     // 如果成功生成，验证解的有效性
     if (success) {
         header.vchPowSolution = solution;
-        BOOST_CHECK(CheckQuantumProofOfWork(header, params));
+        BOOST_CHECK(CheckHybridProofOfWork(header, params));
     }
 }
 
-BOOST_AUTO_TEST_CASE(quantum_pow_parameter_test)
+BOOST_AUTO_TEST_CASE(hybrid_pow_parameter_test)
 {
     // 测试不同的参数设置
     Consensus::Params params;
-    params.powType = Consensus::Params::PowType::QUANTUM_NTRU;
     
     // 测试参数边界
     params.quantum_n = 128;
@@ -105,22 +103,25 @@ BOOST_AUTO_TEST_CASE(quantum_pow_parameter_test)
     BOOST_CHECK_EQUAL(params.quantum_max_density, 64);
 }
 
-BOOST_AUTO_TEST_CASE(quantum_pow_compatibility_test)
+BOOST_AUTO_TEST_CASE(hybrid_pow_compatibility_test)
 {
     // 测试与现有POW系统的兼容性
     Consensus::Params params;
+    params.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
     
-    // 测试SHA256D POW
-    params.powType = Consensus::Params::PowType::SHA256D;
-    BOOST_CHECK_EQUAL(params.powType, Consensus::Params::PowType::SHA256D);
+    // 测试传统POW哈希验证
+    CBlockHeader header;
+    header.nVersion = 1;
+    header.nTime = 1234567890;
+    header.nBits = 0x1e0ffff0;
+    header.nNonce = 0;
     
-    // 测试LATTICE_SIS POW
-    params.powType = Consensus::Params::PowType::LATTICE_SIS;
-    BOOST_CHECK_EQUAL(params.powType, Consensus::Params::PowType::LATTICE_SIS);
+    // 测试传统POW哈希验证
+    BOOST_CHECK(CheckProofOfWorkImpl(header.GetHash(), header.nBits, params));
     
-    // 测试QUANTUM_NTRU POW
-    params.powType = Consensus::Params::PowType::QUANTUM_NTRU;
-    BOOST_CHECK_EQUAL(params.powType, Consensus::Params::PowType::QUANTUM_NTRU);
+    // 测试混合POW验证（需要提供抗量子解）
+    header.vchPowSolution.clear();
+    BOOST_CHECK(!CheckHybridProofOfWork(header, params));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

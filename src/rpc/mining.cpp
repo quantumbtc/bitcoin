@@ -1015,17 +1015,18 @@ static RPCHelpMan getblocktemplate()
         result.pushKV("default_witness_commitment", HexStr(block_template->getCoinbaseCommitment()));
     }
 
-    if (consensusParams.powType == Consensus::Params::PowType::LATTICE_SIS) {
-        UniValue sis(UniValue::VOBJ);
-        sis.pushKV("n", (int)consensusParams.sis_n);
-        sis.pushKV("m", (int)consensusParams.sis_m);
-        sis.pushKV("q", (int)consensusParams.sis_q);
-        sis.pushKV("w", (int)consensusParams.sis_w);
-        result.pushKV("pow_type", "lattice_sis");
-        result.pushKV("sis", sis);
-    } else {
-        result.pushKV("pow_type", "sha256d");
-    }
+    // 混合POW算法：传统哈希 + 抗量子算法
+    UniValue hybrid(UniValue::VOBJ);
+    hybrid.pushKV("n", (int)consensusParams.quantum_n);
+    hybrid.pushKV("q", (int)consensusParams.quantum_q);
+    hybrid.pushKV("p", (int)consensusParams.quantum_p);
+    hybrid.pushKV("d", (int)consensusParams.quantum_d);
+    hybrid.pushKV("l2_threshold", consensusParams.quantum_l2_threshold);
+    hybrid.pushKV("linf_threshold", (int)consensusParams.quantum_linf_threshold);
+    hybrid.pushKV("max_density", (int)consensusParams.quantum_max_density);
+    
+    result.pushKV("pow_type", "hybrid_sha256d_quantum");
+    result.pushKV("hybrid", hybrid);
 
     return result;
 },

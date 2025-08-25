@@ -192,7 +192,7 @@ public:
                 double rate = diff / elapsed.count(); // H/s
 
                 // 粗略 ETA （假设平均需要 powLimit/2 次）
-                double est_total = (1ull << consensus.sis_w); // 假设搜索空间大小
+                double est_total = (1ull << 64); // 假设搜索空间大小
                 double est_remaining = (est_total - currentTries) / (rate > 0 ? rate : 1);
 
                 std::lock_guard<std::mutex> lock(printMutex);
