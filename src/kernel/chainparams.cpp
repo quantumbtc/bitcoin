@@ -71,7 +71,6 @@ static const int NUM_THREADS = std::thread::hardware_concurrency();
 static std::atomic<bool> found(false);
 static std::atomic<uint64_t> totalTries(0);
 static std::mutex printMutex;
-static std::vector<unsigned char> vchPowSolution_genesis(128, 0x00);
 
 void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32_t step)
 {
@@ -80,7 +79,6 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
 
     while (!found.load()) {
         CBlock genesis = CreateGenesisBlock(nTime, nonce, 0x1e0ffff0, 1, 50 * COIN);
-        genesis.vchPowSolution = vchPowSolution_genesis;
         if (CheckProofOfWork(genesis, consensus)) {
             found.store(true);
             std::lock_guard<std::mutex> lock(printMutex);
@@ -111,11 +109,14 @@ public:
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         consensus.powType = Consensus::Params::PowType::LATTICE_SIS;
-        consensus.sis_n = 16;
-consensus.sis_m = 32;
-consensus.sis_q = 12289;
-consensus.sis_w = 8;
-consensus.sis_genesis_any_solution = false; 
+        consensus.sis_n = 256;
+        consensus.sis_m = 512;
+        consensus.sis_q = 12289;
+        consensus.sis_w = 64;
+        // 选择 r 模式：
+        consensus.sis_dynamic_r = true; // 随 nBits 调整
+        consensus.sis_r_fixed = 8;      // 若改为 false 则按固定阈值校验
+        consensus.sis_genesis_any_solution = false; 
         consensus.nSubsidyHalvingInterval = 210000;
         
             consensus.BIP34Height = 0;
@@ -160,7 +161,7 @@ consensus.sis_genesis_any_solution = false;
         m_assumed_blockchain_size = 720;
         m_assumed_chain_state_size = 14;
 
-        genesis = CreateGenesisBlock(1755913406, 1939053, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756103883, 2833885, 0x1e0ffff0, 1, 50 * COIN);
 
          std::cout << "Genesis hash: %s\n", genesis.GetHash().ToString();
         std::cout << "Genesis hash: %s\n", genesis.hashMerkleRoot.ToString();
@@ -222,7 +223,7 @@ consensus.sis_genesis_any_solution = false;
 
         consensus.hashGenesisBlock = genesis.GetHash();
 
-        assert(consensus.hashGenesisBlock == uint256{"00000f1f20755a049143a643ac3a582a013a4fc55964244c5185696e965966a0"});
+        assert(consensus.hashGenesisBlock == uint256{"000007487c7c6a152476517cba788d2d092c1f508a54d6d0dabb746edba7ca57"});
         assert(genesis.hashMerkleRoot == uint256{"b0e14069031ce67080e53fe3d2cdbc23d0949fd85efac43e67ffdcf07d66d541"});
 
         // Note that of those which support the service bits prefix, most only support a subset of
@@ -265,16 +266,14 @@ public:
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         consensus.nSubsidyHalvingInterval = 210000;
-        consensus.script_flag_exceptions.emplace( // BIP16 exception
-            uint256{"00000000dd30457c001f4095d208cc1296b0eed002427aa599874af7a432b105"}, SCRIPT_VERIFY_NONE);
-        consensus.BIP34Height = 21111;
+        consensus.BIP34Height = 0;
         consensus.BIP34Hash = uint256{"0000000023b3a96d3484e5abb3755c413e7d41500f8e2a5c3f0dd01299cd8ef8"};
-        consensus.BIP65Height = 581885; // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
-        consensus.BIP66Height = 330776; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
-        consensus.CSVHeight = 770112; // 00000000025e930139bac5c6c31a403776da130831ab85be56578f3fa75369bb
-        consensus.SegwitHeight = 834624; // 00000000002b980fcd729daaa248fd9316a5200e9b367f4ff2c42453e84201ca
-        consensus.MinBIP9WarningHeight = 836640; // segwit activation height + miner confirmation window
-        consensus.powLimit = uint256{"00000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffe"};
+        consensus.BIP65Height = 0; // 00000000007f6655f22f98e72ed80d8b06dc761d5da09df0fa1dc4be4f861eb6
+        consensus.BIP66Height = 0; // 000000002104c8c45e99a8853285a3b592602a3ccde2b832481da85e9e4ba182
+        consensus.CSVHeight = 0; // 00000000025e930139bac5c6c31a403776da130831ab85be56578f3fa75369bb
+        consensus.SegwitHeight = 0; // 00000000002b980fcd729daaa248fd9316a5200e9b367f4ff2c42453e84201ca
+        consensus.MinBIP9WarningHeight = 0; // segwit activation height + miner confirmation window
+        consensus.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
@@ -307,7 +306,7 @@ public:
         m_assumed_blockchain_size = 200;
         m_assumed_chain_state_size = 19;
 
-        genesis = CreateGenesisBlock(1755913406, 1939053, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756103883, 2833885, 0x1e0ffff0, 1, 50 * COIN);
 
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -363,7 +362,7 @@ public:
         consensus.CSVHeight = 1;
         consensus.SegwitHeight = 1;
         consensus.MinBIP9WarningHeight = 0;
-        consensus.powLimit = uint256{"00000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffe"};
+        consensus.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 14 * 24 * 60 * 60; // two weeks
         consensus.nPowTargetSpacing = 10 * 60;
         consensus.fPowAllowMinDifficultyBlocks = true;
@@ -397,7 +396,7 @@ public:
         m_assumed_blockchain_size = 11;
         m_assumed_chain_state_size = 1;
 
-        genesis = CreateGenesisBlock(1755913406, 1939053, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756103883, 2833885, 0x1e0ffff0, 1, 50 * COIN);
 
                 LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -499,7 +498,7 @@ public:
         consensus.enforce_BIP94 = false;
         consensus.fPowNoRetargeting = false;
         consensus.MinBIP9WarningHeight = 0;
-        consensus.powLimit = uint256{"00000377ae000000000000000000000000000000000000000000000000000000"};
+        consensus.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].bit = 28;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = Consensus::BIP9Deployment::NEVER_ACTIVE;
         consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = Consensus::BIP9Deployment::NO_TIMEOUT;
@@ -524,7 +523,7 @@ public:
         nDefaultPort = 38333;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1755913406, 1939053, 0x1e0ffff0, 1, 50 * COIN);
+       genesis = CreateGenesisBlock(1756103883, 2833885, 0x1e0ffff0, 1, 50 * COIN);
         
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -629,7 +628,7 @@ public:
             consensus.vDeployments[deployment_pos].min_activation_height = version_bits_params.min_activation_height;
         }
 
-        genesis = CreateGenesisBlock(1755913406, 1939053, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756103883, 2833885, 0x1e0ffff0, 1, 50 * COIN);
         
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());

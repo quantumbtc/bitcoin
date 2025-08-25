@@ -161,6 +161,8 @@ struct Params {
         uint32_t sis_m = 512;
         uint32_t sis_q = 12289;
         uint32_t sis_w = 64;       // Hamming weight bound
+        bool sis_dynamic_r = true;        // 
+        uint32_t sis_r_fixed = 8;         // 
         bool sis_genesis_any_solution = false; // relax only for genesis (ease bootstrapping)
     
 };

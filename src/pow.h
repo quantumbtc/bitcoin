@@ -32,7 +32,7 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 /** Check whether a block hash satisfies the proof-of-work requirement specified by nBits */
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params);
 bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Params&);
-bool CheckProofOfWorkSIS(const CBlockHeader& header, const Consensus::Params& params, const uint256& powHashTarget);
+bool CheckProofOfWorkSIS(const CBlockHeader& header, const Consensus::Params& params);
 
 
 /**
