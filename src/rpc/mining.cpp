@@ -25,6 +25,7 @@
 #include <node/warnings.h>
 #include <policy/ephemeral_policy.h>
 #include <pow.h>
+#include <pow_hybrid.h>
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
 #include <rpc/server.h>
@@ -139,10 +140,35 @@ static bool GenerateBlock(ChainstateManager& chainman, CBlock&& block, uint64_t&
     block_out.reset();
     block.hashMerkleRoot = BlockMerkleRoot(block);
 
-    while (max_tries > 0 && block.nNonce < std::numeric_limits<uint32_t>::max() && !CheckProofOfWork(block.GetBlockHeader(), chainman.GetConsensus()) && !chainman.m_interrupt) {
+    // 混合POW挖矿：传统哈希 + 抗量子算法
+    const Consensus::Params& consensus = chainman.GetConsensus();
+    
+    while (max_tries > 0 && block.nNonce < std::numeric_limits<uint32_t>::max() && !chainman.m_interrupt) {
+        // 尝试生成抗量子POW解
+        std::vector<uint8_t> quantum_solution;
+        if (GenerateHybridProofOfWork(block.GetBlockHeader(), consensus, quantum_solution)) {
+            // 设置抗量子解
+            block.vchPowSolution = quantum_solution;
+            
+            // 验证混合POW
+            if (CheckProofOfWork(block.GetBlockHeader(), consensus)) {
+                block_out = std::make_shared<const CBlock>(std::move(block));
+                
+                if (!process_new_block) return true;
+                
+                if (!chainman.ProcessNewBlock(block_out, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr)) {
+                    throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
+                }
+                
+                return true;
+            }
+        }
+        
+        // 如果抗量子解生成失败或验证失败，尝试下一个nonce
         ++block.nNonce;
         --max_tries;
     }
+    
     if (max_tries == 0 || chainman.m_interrupt) {
         return false;
     }
@@ -150,15 +176,7 @@ static bool GenerateBlock(ChainstateManager& chainman, CBlock&& block, uint64_t&
         return true;
     }
 
-    block_out = std::make_shared<const CBlock>(std::move(block));
-
-    if (!process_new_block) return true;
-
-    if (!chainman.ProcessNewBlock(block_out, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr)) {
-        throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
-    }
-
-    return true;
+    return false;
 }
 
 static UniValue generateBlocks(ChainstateManager& chainman, Mining& miner, const CScript& coinbase_output_script, int nGenerate, uint64_t nMaxTries)

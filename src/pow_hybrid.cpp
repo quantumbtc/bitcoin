@@ -6,6 +6,8 @@
 #include <consensus/params.h>
 #include <primitives/block.h>
 #include <crypto/sha256.h>
+#include <hash.h>
+#include <arith_uint256.h>
 #include <vector>
 #include <cmath>
 #include <random>
@@ -84,19 +86,20 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     
     // 从解重建多项式
     Polynomial solution;
-    if (header.vchPowSolution.size() >= solution.coeffs.size() * 4) {
-        for (size_t i = 0; i < solution.coeffs.size(); ++i) {
-            int32_t coeff = 0;
-            for (int j = 0; j < 4; ++j) {
-                if (i * 4 + j < header.vchPowSolution.size()) {
-                    coeff |= static_cast<int32_t>(header.vchPowSolution[i * 4 + j]) << (j * 8);
-                }
-            }
-            solution.coeffs[i] = coeff;
-        }
+    if (header.vchPowSolution.size() < solution.coeffs.size() * 4) {
+        // 解太小，无法重建完整的256个系数
+        return false;
     }
     
-    // 验证抗量子约束条件
+    for (size_t i = 0; i < solution.coeffs.size(); ++i) {
+        int32_t coeff = 0;
+        for (int j = 0; j < 4; ++j) {
+            coeff |= static_cast<int32_t>(header.vchPowSolution[i * 4 + j]) << (j * 8);
+        }
+        solution.coeffs[i] = coeff;
+    }
+    
+    // 验证抗量子约束条件（基础验证）
     double l2_norm = solution.L2Norm();
     int32_t linf_norm = solution.LInfNorm();
     uint32_t density = solution.NonZeroCount();
@@ -106,78 +109,52 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     int32_t linf_threshold = params.quantum_linf_threshold;
     uint32_t max_density = params.quantum_max_density;
     
-    // 根据难度调整阈值（可选）
-    uint32_t difficulty_shift = (header.nBits >> 24) & 0xFF;
-    if (difficulty_shift > 0) {
-        double difficulty_factor = 1.0 / (1.0 + difficulty_shift * 0.05);
-        l2_threshold *= difficulty_factor;
-        linf_threshold = std::max(1, static_cast<int32_t>(linf_threshold * difficulty_factor));
-        if (difficulty_shift > 5) {
-            max_density = std::max(16u, max_density - (difficulty_shift - 5) * 4);
-        }
-    }
-    
-    // 检查所有约束条件
-    if (l2_norm > l2_threshold) {
+    // 基础约束检查
+    if (l2_norm > l2_threshold || linf_norm > linf_threshold || density > max_density) {
         return false;
     }
     
-    if (linf_norm > linf_threshold) {
-        return false;
-    }
+    // 将区块头信息与抗量子解组合，计算SHA256哈希
+    CHashWriter hasher(SER_DISK, CLIENT_VERSION);
     
-    if (density > max_density) {
-        return false;
-    }
+    // 添加区块头字段（排除vchPowSolution）
+    hasher << header.nVersion;
+    hasher << header.hashPrevBlock;
+    hasher << header.hashMerkleRoot;
+    hasher << header.nTime;
+    hasher << header.nBits;
+    hasher << header.nNonce;
     
-    return true;
+    // 添加抗量子解
+    hasher << header.vchPowSolution;
+    
+    uint256 hash = hasher.GetHash();
+    
+    // 将哈希转换为arith_uint256以便与难度比较
+    arith_uint256 target = arith_uint256().SetCompact(header.nBits);
+    arith_uint256 hash_arith = UintToArith256(hash);
+    
+    // 检查哈希是否小于目标难度
+    return hash_arith < target;
 }
 
 // 生成混合POW解
 bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Params& params,
                               std::vector<uint8_t>& solution) {
     // 设置参数
-    double l2_threshold = params.quantum_l2_threshold;
-    int32_t linf_threshold = params.quantum_linf_threshold;
     uint32_t max_density = params.quantum_max_density;
-    
-    // 根据难度调整阈值
-    uint32_t difficulty_shift = (header.nBits >> 24) & 0xFF;
-    if (difficulty_shift > 0) {
-        double difficulty_factor = 1.0 / (1.0 + difficulty_shift * 0.05);
-        l2_threshold *= difficulty_factor;
-        linf_threshold = std::max(1, static_cast<int32_t>(linf_threshold * difficulty_factor));
-        if (difficulty_shift > 5) {
-            max_density = std::max(16u, max_density - (difficulty_shift - 5) * 4);
+
+     // 生成候选解
+    Polynomial candidate;
+    candidate.GenerateRandom(GenerateHeaderSeed(header) + attempt, max_density / 2);
+    // 序列化候选解
+    std::vector<uint8_t> candidate_solution;
+    candidate_solution.reserve(candidate.coeffs.size() * 4);
+
+    for (int32_t coeff : candidate.coeffs) {
+        for (int j = 0; j < 4; ++j) {
+            candidate_solution.push_back((coeff >> (j * 8)) & 0xFF);
         }
     }
-    
-    // 尝试生成满足条件的解
-    const uint32_t max_attempts = 100000;
-    
-    for (uint32_t attempt = 0; attempt < max_attempts; ++attempt) {
-        // 生成候选解
-        Polynomial candidate;
-        candidate.GenerateRandom(GenerateHeaderSeed(header) + attempt, max_density / 2);
-        
-        // 检查是否满足条件
-        if (candidate.L2Norm() <= l2_threshold && 
-            candidate.LInfNorm() <= linf_threshold &&
-            candidate.NonZeroCount() <= max_density) {
-            
-            // 序列化解
-            solution.clear();
-            solution.reserve(candidate.coeffs.size() * 4);
-            
-            for (int32_t coeff : candidate.coeffs) {
-                for (int j = 0; j < 4; ++j) {
-                    solution.push_back((coeff >> (j * 8)) & 0xFF);
-                }
-            }
-            
-            return true;
-        }
-    }
-    
-    return false;
+    return true;
 }
