@@ -192,7 +192,7 @@ bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
         }
     }
     block.vchPowSolution = PackTernary2b(solution);
-    std::cout << "序列化候选解vchPowSolution: ";
-    PrintHex(block.vchPowSolution);
+    //std::cout << "序列化候选解vchPowSolution: ";
+    //PrintHex(block.vchPowSolution);
     return true;
 }
