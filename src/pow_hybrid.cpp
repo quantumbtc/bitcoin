@@ -8,8 +8,7 @@
 #include <crypto/sha256.h>
 #include <hash.h>
 #include <arith_uint256.h>
-#include <version.h>
-#include <serialize.h>
+
 #include <vector>
 #include <cmath>
 #include <random>
@@ -124,7 +123,7 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     }
     
     // 将区块头信息与抗量子解组合，计算SHA256哈希
-    HashWriter hasher(SER_DISK, CLIENT_VERSION);
+    HashWriter hasher;
     
     // 添加区块头字段（排除vchPowSolution）
     hasher << header.nVersion;
