@@ -99,13 +99,13 @@ bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params
 {
     if (EnableFuzzDeterminism()) return (block.GetHash().data()[31] & 0x80) == 0;
     
-    //// 第一步：验证传统比特币POW哈希
-    //auto bnTarget{DeriveTarget(block.nBits, params.powLimit)};
-    //if (!bnTarget) return false;
-    //
-    //if (!CheckProofOfWorkImpl(block.GetHash(), block.nBits, params)) {
-    //    return false;
-    //}
+    // 第一步：验证传统比特币POW哈希
+    auto bnTarget{DeriveTarget(block.nBits, params.powLimit)};
+    if (!bnTarget) return false;
+    
+    if (!CheckProofOfWorkImpl(block.GetHash(), block.nBits, params)) {
+        return false;
+    }
     
     // 第二步：验证抗量子POW解
     if (!CheckHybridProofOfWork(block, params)) {
