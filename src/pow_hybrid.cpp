@@ -88,6 +88,7 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     }
     
     // 从解重建多项式
+    // 期望: 256个系数 × 4字节/系数 = 1024字节
     Polynomial solution;
     if (header.vchPowSolution.size() < solution.coeffs.size() * 4) {
         // 解太小，无法重建完整的256个系数
@@ -183,16 +184,21 @@ bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
      // 生成候选解
     Polynomial candidate;
     candidate.GenerateRandom(GenerateHeaderSeed(block.GetBlockHeader()), max_density / 2);
-    // 序列化候选解
+    // 序列化候选解 - 每个系数用4字节表示
     std::vector<uint8_t> solution;
     solution.reserve(candidate.coeffs.size() * 4);
     for (int32_t coeff : candidate.coeffs) {
+        // 将每个32位系数分解为4个字节
         for (int j = 0; j < 4; ++j) {
             solution.push_back((coeff >> (j * 8)) & 0xFF);
         }
     }
-    block.vchPowSolution = PackTernary2b(solution);
-    //std::cout << "序列化候选解vchPowSolution: ";
-    //PrintHex(block.vchPowSolution);
+    
+    // 直接设置解，不进行压缩，因为CheckHybridProofOfWork期望1024字节
+    block.vchPowSolution = solution;
+    
+    // 调试信息：显示生成的解大小
+    std::cout << "生成的抗量子解大小: " << block.vchPowSolution.size() << " 字节 (期望: " << candidate.coeffs.size() * 4 << " 字节)" << std::endl;
+    
     return true;
 }
