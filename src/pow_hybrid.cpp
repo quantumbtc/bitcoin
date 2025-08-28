@@ -8,6 +8,8 @@
 #include <crypto/sha256.h>
 #include <hash.h>
 #include <arith_uint256.h>
+#include <version.h>
+#include <serialize.h>
 #include <vector>
 #include <cmath>
 #include <random>
