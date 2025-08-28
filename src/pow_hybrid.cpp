@@ -11,6 +11,7 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <iostream>
 
 // 多项式结构（用于抗量子POW）
 struct Polynomial {
@@ -81,7 +82,7 @@ static uint32_t GenerateHeaderSeed(const CBlockHeader& header) {
 bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params& params) {
     // 检查是否提供抗量子POW解
     if (header.vchPowSolution.empty()) {
-        std::cout << "检查是否提供抗量子POW解为空 header.vchPowSolution.empty()...\n";
+        std::cout << "检查是否提供抗量子POW解为空 header.vchPowSolution.empty()..." << std::endl;
         return false;
     }
     
@@ -90,7 +91,7 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     if (header.vchPowSolution.size() < solution.coeffs.size() * 4) {
         // 解太小，无法重建完整的256个系数
         std::cout << "解太小，无法重建完整的256个系数 vchPowSolution<coeffs [" << header.vchPowSolution.size() << "<" << solution.coeffs.size() * 4
-                  << "]...\n";
+                  << "]..." << std::endl;
         return false;
     }
     
@@ -116,12 +117,12 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     if (l2_norm > l2_threshold || linf_norm > linf_threshold || density > max_density) {
         std::cout << "基础约束检查 (不符合) l2_norm>l2_threshold:[" << l2_norm << ">" << l2_threshold << "],linf_norm>linf_threshold:["
                   << linf_norm << ">" << linf_threshold << "density>max_density:[" << density << ">" << max_density
-                  << "]...\n";
+                  << "]..." << std::endl;
         return false;
     }
     
     // 将区块头信息与抗量子解组合，计算SHA256哈希
-    CHashWriter hasher(SER_DISK, CLIENT_VERSION);
+    HashWriter hasher(SER_DISK, CLIENT_VERSION);
     
     // 添加区块头字段（排除vchPowSolution）
     hasher << header.nVersion;
@@ -139,7 +140,8 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     // 将哈希转换为arith_uint256以便与难度比较
     arith_uint256 target = arith_uint256().SetCompact(header.nBits);
     arith_uint256 hash_arith = UintToArith256(hash);
-    std::cout << "哈希转换为arith_uint256以便与难度比较: %s<%s\n", hash_arith.ToString(), target.ToString();
+    
+    std::cout << "哈希转换为arith_uint256以便与难度比较: " << hash_arith.ToString() << "<" << target.ToString() << std::endl;
     
     // 检查哈希是否小于目标难度
     return hash_arith < target;

@@ -28,6 +28,8 @@
 #include <pow.h>
 #include <thread>
 #include <pow_hybrid.h>
+#include <iostream>
+#include <iomanip>
 
 using namespace util::hex_literals;
 
@@ -90,10 +92,10 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
                 found.store(true);
                 std::lock_guard<std::mutex> lock(printMutex);
                 std::cout << "\n==== GENESIS FOUND ====\n";
-                std::cout << "Nonce: " << nonce << "\n";
-                std::cout << "Time: " << nTime << "\n";
-                std::cout << "Hash: " << genesis.GetHash().ToString() << "\n";
-                std::cout << "MerkleRoot: " << genesis.hashMerkleRoot.ToString() << "\n";
+                std::cout << "Nonce: " << nonce << std::endl;
+                std::cout << "Time: " << nTime << std::endl;
+                std::cout << "Hash: " << genesis.GetHash().ToString() << std::endl;
+                std::cout << "MerkleRoot: " << genesis.hashMerkleRoot.ToString() << std::endl;
                 break;
             }
         }
@@ -172,12 +174,12 @@ public:
 
         genesis = CreateGenesisBlock(1756103883, 2833885, 0x1e0ffff0, 1, 50 * COIN);
 
-        std::cout << "Genesis hash: %s\n", genesis.GetHash().ToString();
-        std::cout << "Genesis hash: %s\n", genesis.hashMerkleRoot.ToString();
+        std::cout << "Genesis hash: " << genesis.GetHash().ToString() << std::endl;
+        std::cout << "Genesis hash: " << genesis.hashMerkleRoot.ToString() << std::endl;
 
 
        
-        std::cout << "Starting genesis miner with " << NUM_THREADS << " threads...\n";
+        std::cout << "Starting genesis miner with " << NUM_THREADS << " threads..." << std::endl;
 
         std::vector<std::thread> threads;
         for (int i = 0; i < NUM_THREADS; i++) {
@@ -206,7 +208,7 @@ public:
                 std::lock_guard<std::mutex> lock(printMutex);
                 std::cout << "[Progress] Tried: " << currentTries
                           << " | Rate: " << std::fixed << std::setprecision(2) << rate << " H/s"
-                          << " | ETA: " << (est_remaining / 60.0) << " min\n";
+                          << " | ETA: " << (est_remaining / 60.0) << " min" << std::endl;
 
                 lastTries = currentTries;
                 lastTime = now;
