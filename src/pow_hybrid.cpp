@@ -148,7 +148,7 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     return hash_arith < target;
 }
 
-std::vector<unsigned char> PackTernary2b(const std::vector<int8_t>& x)
+std::vector<unsigned char> PackTernary2b(const std::vector<uint8_t>& x)
 {
     size_t bits = x.size() * 2;
     size_t nbytes = (bits + 7) / 8;
