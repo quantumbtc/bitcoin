@@ -192,6 +192,6 @@ bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
         }
     }
     block.vchPowSolution = PackTernary2b(solution);
-    PrintHex(block.vchPowSolution)
+    PrintHex(block.vchPowSolution);
     return true;
 }
