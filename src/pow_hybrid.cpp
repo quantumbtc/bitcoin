@@ -153,7 +153,7 @@ bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Para
 
      // 生成候选解
     Polynomial candidate;
-    candidate.GenerateRandom(GenerateHeaderSeed(header) + attempt, max_density / 2);
+    candidate.GenerateRandom(GenerateHeaderSeed(header), max_density / 2);
     // 序列化候选解
     std::vector<uint8_t> candidate_solution;
     candidate_solution.reserve(candidate.coeffs.size() * 4);
