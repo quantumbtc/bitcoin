@@ -154,7 +154,7 @@ std::vector<unsigned char> PackTernary2b(const std::vector<uint8_t>& x)
     size_t nbytes = (bits + 7) / 8;
     std::vector<unsigned char> out(nbytes, 0);
     size_t bitpos = 0;
-    for (int8_t v : x) {
+    for (uint8_t v : x) {
         uint8_t code = (v == 0) ? 0 : (v == 1) ? 1 :
                                                  3; // 00,01,11
         size_t byte_idx = bitpos >> 3;
@@ -167,13 +167,13 @@ std::vector<unsigned char> PackTernary2b(const std::vector<uint8_t>& x)
 }
 
 // 生成混合POW解
-bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Params& params) {
+bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
     // 设置参数
     uint32_t max_density = params.quantum_max_density;
 
      // 生成候选解
     Polynomial candidate;
-    candidate.GenerateRandom(GenerateHeaderSeed(header), max_density / 2);
+    candidate.GenerateRandom(GenerateHeaderSeed(block.GetBlockHeader()), max_density / 2);
     // 序列化候选解
     std::vector<uint8_t> solution;
     solution.reserve(candidate.coeffs.size() * 4);
@@ -182,6 +182,6 @@ bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Para
             solution.push_back((coeff >> (j * 8)) & 0xFF);
         }
     }
-    header.vchPowSolution = PackTernary2b(solution);
+    block.vchPowSolution = PackTernary2b(solution);
     return true;
 }

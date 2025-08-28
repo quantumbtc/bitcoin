@@ -48,14 +48,14 @@ BOOST_AUTO_TEST_CASE(hybrid_pow_basic_test)
 
 BOOST_AUTO_TEST_CASE(hybrid_pow_generation_test)
 {
-    // 创建测试区块头
-    CBlockHeader header;
-    header.nVersion = 1;
-    header.hashPrevBlock.SetNull();
-    header.hashMerkleRoot.SetNull();
-    header.nTime = 1234567890;
-    header.nBits = 0x1e0ffff0;
-    header.nNonce = 12345;
+    // 创建测试区块
+    CBlock block;
+    block.nVersion = 1;
+    block.hashPrevBlock.SetNull();
+    block.hashMerkleRoot.SetNull();
+    block.nTime = 1234567890;
+    block.nBits = 0x1e0ffff0;
+    block.nNonce = 12345;
     
     // 创建测试共识参数
     Consensus::Params params;
@@ -69,14 +69,13 @@ BOOST_AUTO_TEST_CASE(hybrid_pow_generation_test)
     params.quantum_max_density = 128;
     
     // 尝试生成POW解
-    std::vector<uint8_t> solution;
-    bool success = GenerateHybridProofOfWork(header, params, solution);
+    bool success = GenerateHybridProofOfWork(block, params);
     
     // 注意：在实际测试中，生成可能需要很长时间，所以这里只是测试接口
     // 如果成功生成，验证解的有效性
     if (success) {
-        header.vchPowSolution = solution;
-        BOOST_CHECK(CheckHybridProofOfWork(header, params));
+        BOOST_CHECK(!block.vchPowSolution.empty());
+        BOOST_CHECK(CheckHybridProofOfWork(block.GetBlockHeader(), params));
     }
 }
 

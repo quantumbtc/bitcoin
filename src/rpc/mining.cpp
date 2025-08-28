@@ -145,11 +145,7 @@ static bool GenerateBlock(ChainstateManager& chainman, CBlock&& block, uint64_t&
     
     while (max_tries > 0 && block.nNonce < std::numeric_limits<uint32_t>::max() && !chainman.m_interrupt) {
         // 尝试生成抗量子POW解
-        std::vector<uint8_t> quantum_solution;
-        if (GenerateHybridProofOfWork(block.GetBlockHeader(), consensus, quantum_solution)) {
-            // 设置抗量子解
-            block.vchPowSolution = quantum_solution;
-            
+        if (GenerateHybridProofOfWork(block, consensus)) {
             // 验证混合POW
             if (CheckProofOfWork(block.GetBlockHeader(), consensus)) {
                 block_out = std::make_shared<const CBlock>(std::move(block));

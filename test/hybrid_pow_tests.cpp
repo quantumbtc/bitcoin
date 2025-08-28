@@ -36,12 +36,12 @@ BOOST_AUTO_TEST_CASE(hybrid_pow_basic_test)
 
 BOOST_AUTO_TEST_CASE(hybrid_pow_generation_test)
 {
-    // 创建测试区块头
-    CBlockHeader header;
-    header.nVersion = 1;
-    header.nTime = 1234567890;
-    header.nBits = 0x1e0ffff0;
-    header.nNonce = 0;
+    // 创建测试区块
+    CBlock block;
+    block.nVersion = 1;
+    block.nTime = 1234567890;
+    block.nBits = 0x1e0ffff0;
+    block.nNonce = 0;
     
     // 创建共识参数
     Consensus::Params params;
@@ -51,16 +51,17 @@ BOOST_AUTO_TEST_CASE(hybrid_pow_generation_test)
     params.quantum_max_density = 128;
     
     // 尝试生成抗量子POW解
-    std::vector<uint8_t> solution;
-    bool success = GenerateHybridProofOfWork(header, params, solution);
+    bool success = GenerateHybridProofOfWork(block, params);
     
     if (success) {
-        // 设置解并验证
-        header.vchPowSolution = solution;
-        BOOST_CHECK(CheckHybridProofOfWork(header, params));
+        // 验证解已设置
+        BOOST_CHECK(!block.vchPowSolution.empty());
+        
+        // 验证混合POW
+        BOOST_CHECK(CheckHybridProofOfWork(block.GetBlockHeader(), params));
         
         // 验证完整的混合POW
-        BOOST_CHECK(CheckProofOfWork(header, params));
+        BOOST_CHECK(CheckProofOfWork(block.GetBlockHeader(), params));
     }
 }
 

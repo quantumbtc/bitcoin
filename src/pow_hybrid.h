@@ -19,6 +19,6 @@
 bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params& params);
 
 /** 生成混合POW解 */
-bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Params& params);
+bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params);
 
 #endif // BITCOIN_POW_HYBRID_H

@@ -84,7 +84,7 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
         CBlock genesis = CreateGenesisBlock(nTime, nonce, 0x1e0ffff0, 1, 50 * COIN);
         // 尝试生成抗量子POW解
         
-        if (GenerateHybridProofOfWork(genesis.GetBlockHeader(), consensus)) {
+        if (GenerateHybridProofOfWork(genesis, consensus)) {
             // 验证混合POW
             if (CheckProofOfWork(genesis.GetBlockHeader(), consensus)) {
                 found.store(true);
