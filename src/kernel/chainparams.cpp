@@ -83,10 +83,8 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
     while (!found.load()) {
         CBlock genesis = CreateGenesisBlock(nTime, nonce, 0x1e0ffff0, 1, 50 * COIN);
         // 尝试生成抗量子POW解
-        std::vector<uint8_t> quantum_solution;
-        if (GenerateHybridProofOfWork(genesis.GetBlockHeader(), consensus, quantum_solution)) {
-            // 设置抗量子解
-            genesis.vchPowSolution = quantum_solution;
+        
+        if (GenerateHybridProofOfWork(genesis.GetBlockHeader(), consensus)) {
             // 验证混合POW
             if (CheckProofOfWork(genesis.GetBlockHeader(), consensus)) {
                 found.store(true);
