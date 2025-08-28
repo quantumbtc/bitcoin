@@ -140,3 +140,33 @@ bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Par
 
     return true;
 }
+
+/**
+ * Check whether a difficulty transition is permitted by the consensus rules.
+ * This function checks if the difficulty change from old_nbits to new_nbits
+ * is within the allowed bounds for the given height.
+ */
+bool PermittedDifficultyTransition(const Consensus::Params& params, int height, unsigned int old_nbits, unsigned int new_nbits)
+{
+    // Get the old and new targets
+    auto old_target = DeriveTarget(old_nbits, params.powLimit);
+    auto new_target = DeriveTarget(new_nbits, params.powLimit);
+    
+    if (!old_target || !new_target) {
+        return false;
+    }
+    
+    // Calculate the ratio of new difficulty to old difficulty
+    double ratio = static_cast<double>(new_target->getdouble()) / static_cast<double>(old_target->getdouble());
+    
+    // Bitcoin's difficulty adjustment rules:
+    // - Difficulty can increase by at most 4x (ratio <= 0.25)
+    // - Difficulty can decrease by at most 4x (ratio >= 4.0)
+    // - These limits are enforced every 2016 blocks (difficulty adjustment interval)
+    if (height % params.DifficultyAdjustmentInterval() == 0) {
+        return ratio >= 0.25 && ratio <= 4.0;
+    }
+    
+    // Between difficulty adjustment intervals, difficulty should not change
+    return ratio == 1.0;
+}

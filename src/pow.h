@@ -33,4 +33,7 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params);
 bool CheckProofOfWorkImpl(uint256 hash, unsigned int nBits, const Consensus::Params&);
 
+/** Check whether a difficulty transition is permitted by the consensus rules */
+bool PermittedDifficultyTransition(const Consensus::Params& params, int height, unsigned int old_nbits, unsigned int new_nbits);
+
 #endif // BITCOIN_POW_H
