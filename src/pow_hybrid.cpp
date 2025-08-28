@@ -148,6 +148,24 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     return hash_arith < target;
 }
 
+std::vector<unsigned char> PackTernary2b(const std::vector<int8_t>& x)
+{
+    size_t bits = x.size() * 2;
+    size_t nbytes = (bits + 7) / 8;
+    std::vector<unsigned char> out(nbytes, 0);
+    size_t bitpos = 0;
+    for (int8_t v : x) {
+        uint8_t code = (v == 0) ? 0 : (v == 1) ? 1 :
+                                                 3; // 00,01,11
+        size_t byte_idx = bitpos >> 3;
+        int shift = bitpos & 7;
+        out[byte_idx] |= (code << shift);
+        if (shift > 6) out[byte_idx + 1] |= (code >> (8 - shift));
+        bitpos += 2;
+    }
+    return out;
+}
+
 // 生成混合POW解
 bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Params& params) {
     // 设置参数
@@ -166,22 +184,4 @@ bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Para
     }
     header.vchPowSolution = PackTernary2b(solution);
     return true;
-}
-
-std::vector<unsigned char> PackTernary2b(const std::vector<int8_t>& x)
-{
-    size_t bits = x.size() * 2;
-    size_t nbytes = (bits + 7) / 8;
-    std::vector<unsigned char> out(nbytes, 0);
-    size_t bitpos = 0;
-    for (int8_t v : x) {
-        uint8_t code = (v == 0) ? 0 : (v == 1) ? 1 :
-                                                 3; // 00,01,11
-        size_t byte_idx = bitpos >> 3;
-        int shift = bitpos & 7;
-        out[byte_idx] |= (code << shift);
-        if (shift > 6) out[byte_idx + 1] |= (code >> (8 - shift));
-        bitpos += 2;
-    }
-    return out;
 }
