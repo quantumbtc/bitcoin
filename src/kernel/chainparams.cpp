@@ -27,6 +27,7 @@
 #include <type_traits>
 #include <pow.h>
 #include <thread>
+#include <pow_hybrid.h>
 
 using namespace util::hex_literals;
 
@@ -67,7 +68,7 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
 
-static const int NUM_THREADS = std::thread::hardware_concurrency();
+static const int NUM_THREADS = 1; // std::thread::hardware_concurrency();
 static std::atomic<bool> found(false);
 static std::atomic<uint64_t> totalTries(0);
 static std::mutex printMutex;
@@ -79,15 +80,22 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
 
     while (!found.load()) {
         CBlock genesis = CreateGenesisBlock(nTime, nonce, 0x1e0ffff0, 1, 50 * COIN);
-        if (CheckProofOfWork(genesis, consensus)) {
-            found.store(true);
-            std::lock_guard<std::mutex> lock(printMutex);
-            std::cout << "\n==== GENESIS FOUND ====\n";
-            std::cout << "Nonce: " << nonce << "\n";
-            std::cout << "Time: " << nTime << "\n";
-            std::cout << "Hash: " << genesis.GetHash().ToString() << "\n";
-            std::cout << "MerkleRoot: " << genesis.hashMerkleRoot.ToString() << "\n";
-            break;
+        // 尝试生成抗量子POW解
+        std::vector<uint8_t> quantum_solution;
+        if (GenerateHybridProofOfWork(genesis.GetBlockHeader(), consensus, quantum_solution)) {
+            // 设置抗量子解
+            genesis.vchPowSolution = quantum_solution;
+            // 验证混合POW
+            if (CheckProofOfWork(genesis.GetBlockHeader(), consensus)) {
+                found.store(true);
+                std::lock_guard<std::mutex> lock(printMutex);
+                std::cout << "\n==== GENESIS FOUND ====\n";
+                std::cout << "Nonce: " << nonce << "\n";
+                std::cout << "Time: " << nTime << "\n";
+                std::cout << "Hash: " << genesis.GetHash().ToString() << "\n";
+                std::cout << "MerkleRoot: " << genesis.hashMerkleRoot.ToString() << "\n";
+                break;
+            }
         }
         nonce += step;
         totalTries++;
@@ -127,7 +135,7 @@ public:
         consensus.CSVHeight = 0; // 000000000000000004a1b34462cb8aeebd5799177f7a29cf28f2d1961716b5b5
         consensus.SegwitHeight = 0; // 0000000000000000001c8018d9cb3b742ef25114f27563e3fc4a1902167f9893
         consensus.MinBIP9WarningHeight = 0; // segwit activation height + miner confirmation window
-        consensus.powLimit = uint256{"00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
+        consensus.powLimit = uint256{"000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"};
         consensus.nPowTargetTimespan = 3 * 24 * 60 * 60; // 3 days
         consensus.nPowTargetSpacing = 1 * 60; // 1 minute
         consensus.fPowAllowMinDifficultyBlocks = false;
@@ -164,7 +172,7 @@ public:
 
         genesis = CreateGenesisBlock(1756103883, 2833885, 0x1e0ffff0, 1, 50 * COIN);
 
-         std::cout << "Genesis hash: %s\n", genesis.GetHash().ToString();
+        std::cout << "Genesis hash: %s\n", genesis.GetHash().ToString();
         std::cout << "Genesis hash: %s\n", genesis.hashMerkleRoot.ToString();
 
 

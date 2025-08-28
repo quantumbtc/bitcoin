@@ -81,6 +81,7 @@ static uint32_t GenerateHeaderSeed(const CBlockHeader& header) {
 bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params& params) {
     // 检查是否提供抗量子POW解
     if (header.vchPowSolution.empty()) {
+        std::cout << "检查是否提供抗量子POW解为空 header.vchPowSolution.empty()...\n";
         return false;
     }
     
@@ -88,6 +89,8 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     Polynomial solution;
     if (header.vchPowSolution.size() < solution.coeffs.size() * 4) {
         // 解太小，无法重建完整的256个系数
+        std::cout << "解太小，无法重建完整的256个系数 vchPowSolution<coeffs [" << header.vchPowSolution.size() << "<" << solution.coeffs.size() * 4
+                  << "]...\n";
         return false;
     }
     
@@ -111,6 +114,9 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     
     // 基础约束检查
     if (l2_norm > l2_threshold || linf_norm > linf_threshold || density > max_density) {
+        std::cout << "基础约束检查 (不符合) l2_norm>l2_threshold:[" << l2_norm << ">" << l2_threshold << "],linf_norm>linf_threshold:["
+                  << linf_norm << ">" << linf_threshold << "density>max_density:[" << density << ">" << max_density
+                  << "]...\n";
         return false;
     }
     
@@ -133,6 +139,7 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
     // 将哈希转换为arith_uint256以便与难度比较
     arith_uint256 target = arith_uint256().SetCompact(header.nBits);
     arith_uint256 hash_arith = UintToArith256(hash);
+    std::cout << "哈希转换为arith_uint256以便与难度比较: %s<%s\n", hash_arith.ToString(), target.ToString();
     
     // 检查哈希是否小于目标难度
     return hash_arith < target;
@@ -156,5 +163,6 @@ bool GenerateHybridProofOfWork(const CBlockHeader& header, const Consensus::Para
             candidate_solution.push_back((coeff >> (j * 8)) & 0xFF);
         }
     }
+    solution = candidate_solution;
     return true;
 }
