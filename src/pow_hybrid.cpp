@@ -166,6 +166,15 @@ std::vector<unsigned char> PackTernary2b(const std::vector<uint8_t>& x)
     return out;
 }
 
+void PrintHex(const std::vector<unsigned char>& data)
+{
+    for (unsigned char c : data) {
+        std::cout << "序列化候选解vchPowSolution: "  << std::hex << std::setw(2) << std::setfill('0')
+                  << static_cast<int>(c);
+    }
+    std::cout << std::dec << std::endl; // 恢复十进制
+}
+
 // 生成混合POW解
 bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
     // 设置参数
@@ -183,5 +192,6 @@ bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
         }
     }
     block.vchPowSolution = PackTernary2b(solution);
+    PrintHex(block.vchPowSolution)
     return true;
 }
