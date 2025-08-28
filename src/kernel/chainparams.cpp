@@ -70,7 +70,7 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
 
-static const int NUM_THREADS = 1; // std::thread::hardware_concurrency();
+static const int NUM_THREADS =  std::thread::hardware_concurrency();
 static std::atomic<bool> found(false);
 static std::atomic<uint64_t> totalTries(0);
 static std::mutex printMutex;
