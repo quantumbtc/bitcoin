@@ -75,15 +75,6 @@ static std::atomic<bool> found(false);
 static std::atomic<uint64_t> totalTries(0);
 static std::mutex printMutex;
 
-void PrintHex(const std::vector<unsigned char>& data)
-{
-    for (unsigned char c : data) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0')
-                  << static_cast<int>(c);
-    }
-    std::cout << std::dec << std::endl; // 恢复十进制
-}
-
 void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32_t step)
 {
     uint32_t nonce = startNonce;

@@ -21,4 +21,6 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
 /** 生成混合POW解 */
 bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params);
 
+void PrintHex(const std::vector<unsigned char>& data)
+
 #endif // BITCOIN_POW_HYBRID_H
