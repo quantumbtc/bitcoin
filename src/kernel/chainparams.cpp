@@ -27,9 +27,12 @@
 #include <type_traits>
 #include <pow.h>
 #include <thread>
+#include <mutex>
+#include <atomic>
 #include <pow_hybrid.h>
 #include <iostream>
 #include <iomanip>
+#include <util/time.h>
 
 using namespace util::hex_literals;
 
@@ -86,7 +89,7 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
         
         if (GenerateHybridProofOfWork(genesis, consensus)) {
             // 验证混合POW
-            if (CheckProofOfWork(genesis.GetBlockHeader(), consensus)) {
+            if (CheckHybridProofOfWork(genesis.GetBlockHeader(), consensus)) {
                 found.store(true);
                 std::lock_guard<std::mutex> lock(printMutex);
                 std::cout << "\n==== GENESIS FOUND ====\n";
