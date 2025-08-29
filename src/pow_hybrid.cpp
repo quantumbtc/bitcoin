@@ -87,22 +87,38 @@ bool CheckHybridProofOfWork(const CBlockHeader& header, const Consensus::Params&
         return false;
     }
     
-    // 从解重建多项式
-    // 期望: 256个系数 × 4字节/系数 = 1024字节
+    // 从解重建多项式（2 bit/系数压缩：00->0, 01->+1, 10->-1）
     Polynomial solution;
-    if (header.vchPowSolution.size() < solution.coeffs.size() * 4) {
-        // 解太小，无法重建完整的256个系数
-        std::cout << "解太小，无法重建完整的256个系数 vchPowSolution<coeffs [" << header.vchPowSolution.size() << "<" << solution.coeffs.size() * 4
+    const size_t expected_bytes = (solution.coeffs.size() * 2 + 7) / 8; // 256*2/8 = 64
+    if (header.vchPowSolution.size() < expected_bytes) {
+        std::cout << "解太小，无法重建完整的256个系数 vchPowSolution<packed [" << header.vchPowSolution.size() << "<" << expected_bytes
                   << "]..." << std::endl;
         return false;
     }
-    
+    // 解包2-bit编码
+    size_t bitpos = 0;
     for (size_t i = 0; i < solution.coeffs.size(); ++i) {
+        size_t byte_idx = bitpos >> 3;
+        int shift = bitpos & 7;
+        uint8_t cur = header.vchPowSolution[byte_idx];
+        uint8_t code = (cur >> shift) & 0x03;
+        if (shift > 6) {
+            // 跨字节
+            uint8_t next = header.vchPowSolution[byte_idx + 1];
+            code |= (next & 0x01) << (2 - (8 - shift));
+            code &= 0x03;
+        }
         int32_t coeff = 0;
-        for (int j = 0; j < 4; ++j) {
-            coeff |= static_cast<int32_t>(header.vchPowSolution[i * 4 + j]) << (j * 8);
+        if (code == 0) coeff = 0;
+        else if (code == 1) coeff = 1;
+        else if (code == 2) coeff = -1;
+        else {
+            // 保留编码，视为无效
+            std::cout << "检测到无效的2-bit编码: 3 (索引 " << i << ")" << std::endl;
+            return false;
         }
         solution.coeffs[i] = coeff;
+        bitpos += 2;
     }
     
     // 验证抗量子约束条件（基础验证）
@@ -156,8 +172,8 @@ std::vector<unsigned char> PackTernary2b(const std::vector<uint8_t>& x)
     std::vector<unsigned char> out(nbytes, 0);
     size_t bitpos = 0;
     for (uint8_t v : x) {
-        uint8_t code = (v == 0) ? 0 : (v == 1) ? 1 :
-                                                 3; // 00,01,11
+        // v 取值: 0->00, 1->01, 2->10；其他值视为无效并编码为保留(11)
+        uint8_t code = (v <= 2) ? v : 3;
         size_t byte_idx = bitpos >> 3;
         int shift = bitpos & 7;
         out[byte_idx] |= (code << shift);
@@ -184,21 +200,15 @@ bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
      // 生成候选解
     Polynomial candidate;
     candidate.GenerateRandom(GenerateHeaderSeed(block.GetBlockHeader()), max_density / 2);
-    // 序列化候选解 - 每个系数用4字节表示
-    std::vector<uint8_t> solution;
-    solution.reserve(candidate.coeffs.size() * 4);
-    for (int32_t coeff : candidate.coeffs) {
-        // 将每个32位系数分解为4个字节
-        for (int j = 0; j < 4; ++j) {
-            solution.push_back((coeff >> (j * 8)) & 0xFF);
-        }
+    // 使用2-bit编码序列化：0->0, +1->1, -1->2
+    std::vector<uint8_t> ternary(candidate.coeffs.size(), 0);
+    for (size_t i = 0; i < candidate.coeffs.size(); ++i) {
+        ternary[i] = (candidate.coeffs[i] == 0) ? 0 : (candidate.coeffs[i] > 0 ? 1 : 2);
     }
-    
-    // 直接设置解，不进行压缩，因为CheckHybridProofOfWork期望1024字节
-    block.vchPowSolution = solution;
+    block.vchPowSolution = PackTernary2b(ternary);
     
     // 调试信息：显示生成的解大小
-    //std::cout << "生成的抗量子解大小: " << block.vchPowSolution.size() << " 字节 (期望: " << candidate.coeffs.size() * 4 << " 字节)" << std::endl;
+    //std::cout << "生成的抗量子解大小: " << block.vchPowSolution.size() << " 字节 (压缩: 2-bit/coeff)" << std::endl;
     
     return true;
 }
