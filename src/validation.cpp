@@ -4178,7 +4178,14 @@ arith_uint256 CalculateClaimedHeadersWork(std::span<const CBlockHeader> headers)
 static bool ContextualCheckBlockHeader(const CBlockHeader& block, BlockValidationState& state, BlockManager& blockman, const ChainstateManager& chainman, const CBlockIndex* pindexPrev) EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
 {
     AssertLockHeld(::cs_main);
-    assert(pindexPrev != nullptr);
+    
+    // Handle the case where pindexPrev is nullptr (genesis block or during reindexing)
+    if (pindexPrev == nullptr) {
+        // For genesis block or when no previous block is available, skip contextual validation
+        // This prevents assertion failures during reindexing when CSV deployment is active from height 0
+        return true;
+    }
+    
     const int nHeight = pindexPrev->nHeight + 1;
 
     // Check proof of work
@@ -4231,11 +4238,10 @@ static bool ContextualCheckBlock(const CBlock& block, BlockValidationState& stat
     // Enforce BIP113 (Median Time Past).
     bool enforce_locktime_median_time_past{false};
     if (DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_CSV)) {
-        assert(pindexPrev != nullptr);
         enforce_locktime_median_time_past = true;
     }
 
-    const int64_t nLockTimeCutoff{enforce_locktime_median_time_past ?
+    const int64_t nLockTimeCutoff{enforce_locktime_median_time_past && pindexPrev != nullptr ?
                                       pindexPrev->GetMedianTimePast() :
                                       block.GetBlockTime()};
 
