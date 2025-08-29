@@ -174,57 +174,57 @@ public:
         m_assumed_blockchain_size = 720;
         m_assumed_chain_state_size = 14;
 
-        genesis = CreateGenesisBlock(1756447103, 33792, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756448751, 106711, 0x1e0ffff0, 1, 50 * COIN);
 
         std::cout << "Genesis hash: " << genesis.GetHash().ToString() << std::endl;
         std::cout << "Genesis hash: " << genesis.hashMerkleRoot.ToString() << std::endl;
 
 
        
-        std::cout << "Starting genesis miner with " << NUM_THREADS << " threads..." << std::endl;
+        //std::cout << "Starting genesis miner with " << NUM_THREADS << " threads..." << std::endl;
 
-        std::vector<std::thread> threads;
-        for (int i = 0; i < NUM_THREADS; i++) {
-            threads.emplace_back(MineGenesis, std::ref(consensus), i, NUM_THREADS);
-        }
+        //std::vector<std::thread> threads;
+        //for (int i = 0; i < NUM_THREADS; i++) {
+        //    threads.emplace_back(MineGenesis, std::ref(consensus), i, NUM_THREADS);
+        //}
 
-        // 进度显示线程
-        std::thread progress([&]() {
-            uint64_t lastTries = 0;
-            auto lastTime = std::chrono::steady_clock::now();
+        //// 进度显示线程
+        //std::thread progress([&]() {
+        //    uint64_t lastTries = 0;
+        //    auto lastTime = std::chrono::steady_clock::now();
 
-            while (!found.load()) {
-                std::this_thread::sleep_for(std::chrono::seconds(5));
+        //    while (!found.load()) {
+        //        std::this_thread::sleep_for(std::chrono::seconds(5));
 
-                uint64_t currentTries = totalTries.load();
-                auto now = std::chrono::steady_clock::now();
-                std::chrono::duration<double> elapsed = now - lastTime;
+        //        uint64_t currentTries = totalTries.load();
+        //        auto now = std::chrono::steady_clock::now();
+        //        std::chrono::duration<double> elapsed = now - lastTime;
 
-                uint64_t diff = currentTries - lastTries;
-                double rate = diff / elapsed.count(); // H/s
+        //        uint64_t diff = currentTries - lastTries;
+        //        double rate = diff / elapsed.count(); // H/s
 
-                // 粗略 ETA （假设平均需要 powLimit/2 次）
-                double est_total = static_cast<double>(std::numeric_limits<uint64_t>::max()); // 假设搜索空间大小
-                double est_remaining = (est_total - currentTries) / (rate > 0 ? rate : 1);
+        //        // 粗略 ETA （假设平均需要 powLimit/2 次）
+        //        double est_total = static_cast<double>(std::numeric_limits<uint64_t>::max()); // 假设搜索空间大小
+        //        double est_remaining = (est_total - currentTries) / (rate > 0 ? rate : 1);
 
-                std::lock_guard<std::mutex> lock(printMutex);
-                std::cout << "[Progress] Tried: " << currentTries
-                          << " | Rate: " << std::fixed << std::setprecision(2) << rate << " H/s"
-                          << " | ETA: " << (est_remaining / 60.0) << " min" << std::endl;
+        //        std::lock_guard<std::mutex> lock(printMutex);
+        //        std::cout << "[Progress] Tried: " << currentTries
+        //                  << " | Rate: " << std::fixed << std::setprecision(2) << rate << " H/s"
+        //                  << " | ETA: " << (est_remaining / 60.0) << " min" << std::endl;
 
-                lastTries = currentTries;
-                lastTime = now;
-            }
-        });
+        //        lastTries = currentTries;
+        //        lastTime = now;
+        //    }
+        //});
 
-        for (auto& t : threads)
-            t.join();
-        progress.join();
+        //for (auto& t : threads)
+        //    t.join();
+        //progress.join();
 
 
         consensus.hashGenesisBlock = genesis.GetHash();
 
-        assert(consensus.hashGenesisBlock == uint256{"00000d93cdb1c802aebb7f82ef18885861f869efb37b251908f6f8236b0597d3"});
+        assert(consensus.hashGenesisBlock == uint256{"00000ae4e41612308fdefd2c07bce1caa748c01dd605645a7d13be579ab8e721"});
         assert(genesis.hashMerkleRoot == uint256{"b0e14069031ce67080e53fe3d2cdbc23d0949fd85efac43e67ffdcf07d66d541"});
 
         // Note that of those which support the service bits prefix, most only support a subset of
@@ -307,7 +307,7 @@ public:
         m_assumed_blockchain_size = 200;
         m_assumed_chain_state_size = 19;
 
-        genesis = CreateGenesisBlock(1756447103, 33792, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756448751, 106711, 0x1e0ffff0, 1, 50 * COIN);
 
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -397,7 +397,7 @@ public:
         m_assumed_blockchain_size = 11;
         m_assumed_chain_state_size = 1;
 
-        genesis = CreateGenesisBlock(1756447103, 33792, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756448751, 106711, 0x1e0ffff0, 1, 50 * COIN);
 
                 LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -524,7 +524,7 @@ public:
         nDefaultPort = 38333;
         nPruneAfterHeight = 1000;
 
-       genesis = CreateGenesisBlock(1756447103, 33792, 0x1e0ffff0, 1, 50 * COIN);
+       genesis = CreateGenesisBlock(1756448751, 106711, 0x1e0ffff0, 1, 50 * COIN);
         
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -629,7 +629,7 @@ public:
             consensus.vDeployments[deployment_pos].min_activation_height = version_bits_params.min_activation_height;
         }
 
-        genesis = CreateGenesisBlock(1756447103, 33792, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756448751, 106711, 0x1e0ffff0, 1, 50 * COIN);
         
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
