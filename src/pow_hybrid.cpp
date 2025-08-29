@@ -198,7 +198,7 @@ bool GenerateHybridProofOfWork(CBlock& block, const Consensus::Params& params) {
     block.vchPowSolution = solution;
     
     // 调试信息：显示生成的解大小
-    std::cout << "生成的抗量子解大小: " << block.vchPowSolution.size() << " 字节 (期望: " << candidate.coeffs.size() * 4 << " 字节)" << std::endl;
+    //std::cout << "生成的抗量子解大小: " << block.vchPowSolution.size() << " 字节 (期望: " << candidate.coeffs.size() * 4 << " 字节)" << std::endl;
     
     return true;
 }
