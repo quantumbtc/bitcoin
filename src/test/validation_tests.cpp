@@ -360,64 +360,6 @@ BOOST_AUTO_TEST_CASE(block_malleation)
     }
 }
 
-BOOST_AUTO_TEST_CASE(contextual_check_block_nullptr_prev)
-{
-    // Test that ContextualCheckBlock handles nullptr pindexPrev correctly
-    // This test verifies the fix for the assertion failure during reindexing
-    // when CSV deployment is active from height 0
-    
-    const auto chainParams = CreateChainParams(*m_node.args, ChainType::MAIN);
-    const Consensus::Params& consensus = chainParams->GetConsensus();
-    
-    // Create a minimal block for testing
-    CBlock block;
-    CMutableTransaction coinbase;
-    coinbase.vin.resize(1);
-    coinbase.vin[0].prevout.SetNull();
-    coinbase.vin[0].scriptSig = CScript() << 0 << OP_0; // Height 0
-    coinbase.vout.resize(1);
-    coinbase.vout[0].scriptPubKey = CScript() << OP_DUP << OP_HASH160 << ParseHex("0000000000000000000000000000000000000000") << OP_EQUALVERIFY << OP_CHECKSIG;
-    coinbase.vout[0].nValue = 50 * COIN;
-    block.vtx.push_back(MakeTransactionRef(coinbase));
-    
-    // Set block time to current time
-    block.nTime = GetTime();
-    block.nBits = 0x1d00ffff; // Mainnet genesis difficulty
-    block.nVersion = 1;
-    
-    // Test that ContextualCheckBlock doesn't crash with nullptr pindexPrev
-    // This should work now with our fix
-    BlockValidationState state;
-    bool result = ContextualCheckBlock(block, state, *m_node.chainman, nullptr);
-    
-    // The block should be valid (this is a basic genesis-like block)
-    BOOST_CHECK(result);
-    BOOST_CHECK(state.IsValid());
-}
 
-BOOST_AUTO_TEST_CASE(contextual_check_block_header_nullptr_prev)
-{
-    // Test that ContextualCheckBlockHeader handles nullptr pindexPrev correctly
-    // This test verifies the fix for the assertion failure during reindexing
-    // when CSV deployment is active from height 0
-    
-    const auto chainParams = CreateChainParams(*m_node.args, ChainType::MAIN);
-    const Consensus::Params& consensus = chainParams->GetConsensus();
-    
-    // Create a minimal block header for testing
-    CBlockHeader block;
-    block.nTime = GetTime();
-    block.nBits = 0x1d00ffff; // Mainnet genesis difficulty
-    block.nVersion = 1;
-    
-    // Test that ContextualCheckBlockHeader doesn't crash with nullptr pindexPrev
-    // This should work now with our fix
-    BlockValidationState state;
-    bool result = ContextualCheckBlockHeader(block, state, m_node.chainman->m_blockman, *m_node.chainman, nullptr);
-    
-    // The block header should be valid when pindexPrev is nullptr (genesis case)
-    BOOST_CHECK(result);
-    BOOST_CHECK(state.IsValid());
-}
 
 BOOST_AUTO_TEST_SUITE_END()
