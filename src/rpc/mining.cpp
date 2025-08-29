@@ -28,6 +28,9 @@
 #include <pow_hybrid.h>
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
+#include <thread>
+#include <atomic>
+#include <chrono>
 #include <rpc/server.h>
 #include <rpc/server_util.h>
 #include <rpc/util.h>
@@ -268,11 +271,87 @@ static RPCHelpMan generatetodescriptor()
     };
 }
 
+// 简单的连续挖矿控制
+static std::atomic<bool> g_continuous_mining{false};
+static std::thread g_mining_thread;
+
+static void StopMiningThread()
+{
+    g_continuous_mining.store(false);
+    if (g_mining_thread.joinable()) g_mining_thread.join();
+}
+
+static void StartMiningThread(NodeContext& node, const CScript coinbase_output_script)
+{
+    StopMiningThread();
+    g_continuous_mining.store(true);
+    g_mining_thread = std::thread([&node, coinbase_output_script]() {
+        Mining& miner = EnsureMining(node);
+        ChainstateManager& chainman = EnsureChainman(node);
+        while (g_continuous_mining.load()) {
+            try {
+                // 单个块生成
+                auto res = generateBlocks(chainman, miner, coinbase_output_script, /*nGenerate=*/1, /*nMaxTries=*/DEFAULT_MAX_TRIES);
+                (void)res;
+            } catch (const std::exception&) {
+                // 忽略单次错误，短暂休眠
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+            // 轻微让步，避免CPU 100%
+            std::this_thread::sleep_for(std::chrono::milliseconds(0));
+        }
+    });
+}
+
 static RPCHelpMan generate()
 {
-    return RPCHelpMan{"generate", "has been replaced by the -generate cli option. Refer to -help for more information.", {}, {}, RPCExamples{""}, [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue {
-        throw JSONRPCError(RPC_METHOD_NOT_FOUND, self.ToString());
-    }};
+    return RPCHelpMan{"generate",
+        "Start/stop continuous mining in the background.\n"
+        "Usage: generate start <address> | generate stop",
+        {
+            {"action", RPCArg::Type::STR, RPCArg::Optional::NO, "'start' to begin, 'stop' to end."},
+            {"address", RPCArg::Type::STR, RPCArg::Optional::OMITTED, "Destination address when starting."},
+        },
+        RPCResult{
+            RPCResult::Type::OBJ, "", "",
+            {{RPCResult::Type::STR, "status", "'started' or 'stopped'"}}
+        },
+        RPCExamples{
+            "\nStart continuous mining to an address\n" + HelpExampleCli("generate", "start \"myaddress\"") +
+            "\nStop continuous mining\n" + HelpExampleCli("generate", "stop")
+        },
+        [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
+{
+    const std::string action = request.params[0].get_str();
+
+    if (action == "stop") {
+        StopMiningThread();
+        UniValue obj(UniValue::VOBJ);
+        obj.pushKV("status", "stopped");
+        return obj;
+    }
+
+    if (action != "start") {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "action must be 'start' or 'stop'");
+    }
+
+    if (request.params.size() < 2) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "address is required when starting");
+    }
+
+    CTxDestination destination = DecodeDestination(request.params[1].get_str());
+    if (!IsValidDestination(destination)) {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Error: Invalid address");
+    }
+
+    NodeContext& node = EnsureAnyNodeContext(request.context);
+    CScript coinbase_output_script = GetScriptForDestination(destination);
+    StartMiningThread(node, coinbase_output_script);
+
+    UniValue obj(UniValue::VOBJ);
+    obj.pushKV("status", "started");
+    return obj;
+}};
 }
 
 static RPCHelpMan generatetoaddress()
