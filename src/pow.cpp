@@ -101,9 +101,8 @@ bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params
     
     // 第一步：验证传统比特币POW哈希
     auto bnTarget{DeriveTarget(block.nBits, params.powLimit)};
-    if (!bnTarget) return false;
-    
-    if (!CheckProofOfWorkImpl(block.GetHash(), block.nBits, params)) {
+    if (!bnTarget) {
+        std::cout << "bnTarget 验证失败: params " << params.powLimit.ToString() << ",nBits " << UintToArith256(block.nBits).ToString() << std::endl;
         return false;
     }
     

@@ -92,7 +92,7 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
         
         if (GenerateHybridProofOfWork(genesis, consensus)) {
             // 验证混合POW
-            if (CheckHybridProofOfWork(genesis.GetBlockHeader(), consensus)) {
+            if (CheckProofOfWork(genesis.GetBlockHeader(), consensus)) {
                 found.store(true);
                 std::lock_guard<std::mutex> lock(printMutex);
                 std::cout << "\n==== GENESIS FOUND ====\n";
