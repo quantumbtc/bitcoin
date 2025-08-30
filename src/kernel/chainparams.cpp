@@ -166,7 +166,7 @@ public:
         m_assumed_blockchain_size = 720;
         m_assumed_chain_state_size = 14;
 
-        genesis = CreateGenesisBlock(1756484769, 492848, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756526185, 1064202, 0x1e0ffff0, 1, 50 * COIN);
 
         std::cout << "Genesis hash: " << genesis.GetHash().ToString() << std::endl;
         std::cout << "Genesis hash: " << genesis.hashMerkleRoot.ToString() << std::endl;
@@ -216,7 +216,7 @@ public:
 
         consensus.hashGenesisBlock = genesis.GetHash();
 
-        assert(consensus.hashGenesisBlock == uint256{"000006907124c95d9aa9f452c8c4117824661ac8f4496181a4a46037fab83b25"});
+        assert(consensus.hashGenesisBlock == uint256{"0000046a6e93e2caec8c891f5e3186df12f00a8c0a30499a7fc3a3ae9cd39fe5"});
         assert(genesis.hashMerkleRoot == uint256{"b0e14069031ce67080e53fe3d2cdbc23d0949fd85efac43e67ffdcf07d66d541"});
 
         // Note that of those which support the service bits prefix, most only support a subset of
@@ -299,7 +299,7 @@ public:
         m_assumed_blockchain_size = 200;
         m_assumed_chain_state_size = 19;
 
-        genesis = CreateGenesisBlock(1756484769, 492848, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756526185, 1064202, 0x1e0ffff0, 1, 50 * COIN);
 
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -389,7 +389,7 @@ public:
         m_assumed_blockchain_size = 11;
         m_assumed_chain_state_size = 1;
 
-        genesis = CreateGenesisBlock(1756484769, 492848, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756526185, 1064202, 0x1e0ffff0, 1, 50 * COIN);
 
                 LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -516,7 +516,7 @@ public:
         nDefaultPort = 38333;
         nPruneAfterHeight = 1000;
 
-       genesis = CreateGenesisBlock(1756484769, 492848, 0x1e0ffff0, 1, 50 * COIN);
+       genesis = CreateGenesisBlock(1756526185, 1064202, 0x1e0ffff0, 1, 50 * COIN);
         
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
@@ -621,7 +621,7 @@ public:
             consensus.vDeployments[deployment_pos].min_activation_height = version_bits_params.min_activation_height;
         }
 
-        genesis = CreateGenesisBlock(1756484769, 492848, 0x1e0ffff0, 1, 50 * COIN);
+        genesis = CreateGenesisBlock(1756526185, 1064202, 0x1e0ffff0, 1, 50 * COIN);
         
         LogPrintf("Genesis hash: %s\n", genesis.GetHash().ToString());
         LogPrintf("Genesis hash: %s\n", genesis.hashMerkleRoot.ToString());
