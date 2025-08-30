@@ -29,7 +29,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-#include <pow_hybrid.h>
+
 #include <iostream>
 #include <iomanip>
 #include <util/time.h>
@@ -62,7 +62,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
     genesis.nBits    = nBits;
     genesis.nNonce   = nNonce;
     genesis.nVersion = nVersion;
-    genesis.vchPowSolution = ParseHex("10000800010008458000020000001006604080180000000000104000108180804142080000804288200206000400000098248025498000000214028002000408");
+
     genesis.vtx.push_back(MakeTransactionRef(std::move(txNew)));
     genesis.hashPrevBlock.SetNull();
     genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
@@ -88,21 +88,17 @@ void MineGenesis(const Consensus::Params& consensus, uint32_t startNonce, uint32
 
     while (!found.load()) {
         CBlock genesis = CreateGenesisBlock(nTime, nonce, 0x1e0ffff0, 1, 50 * COIN);
-        // 尝试生成抗量子POW解
         
-        if (GenerateHybridProofOfWork(genesis, consensus)) {
-            // 验证混合POW
-            if (CheckProofOfWork(genesis.GetBlockHeader(), consensus)) {
-                found.store(true);
-                std::lock_guard<std::mutex> lock(printMutex);
-                std::cout << "\n==== GENESIS FOUND ====\n";
-                PrintHex(genesis.vchPowSolution);
-                std::cout << "Nonce: " << nonce << std::endl;
-                std::cout << "Time: " << nTime << std::endl;
-                std::cout << "Hash: " << genesis.GetHash().ToString() << std::endl;
-                std::cout << "MerkleRoot: " << genesis.hashMerkleRoot.ToString() << std::endl;
-                break;
-            }
+        // 验证传统POW
+        if (CheckProofOfWork(genesis.GetBlockHeader(), consensus)) {
+            found.store(true);
+            std::lock_guard<std::mutex> lock(printMutex);
+            std::cout << "\n==== GENESIS FOUND ====\n";
+            std::cout << "Nonce: " << nonce << std::endl;
+            std::cout << "Time: " << nTime << std::endl;
+            std::cout << "Hash: " << genesis.GetHash().ToString() << std::endl;
+            std::cout << "MerkleRoot: " << genesis.hashMerkleRoot.ToString() << std::endl;
+            break;
         }
         nonce += step;
         totalTries++;
@@ -124,14 +120,7 @@ public:
         consensus.signet_blocks = false;
         consensus.signet_challenge.clear();
         
-        // 混合POW算法参数设置：传统哈希 + 抗量子算法
-        consensus.quantum_n = 256;
-        consensus.quantum_q = 12289;
-        consensus.quantum_p = 3;
-        consensus.quantum_d = 64;
-        consensus.quantum_l2_threshold = 100.0;
-        consensus.quantum_linf_threshold = 50;
-        consensus.quantum_max_density = 128;
+
         
         consensus.nSubsidyHalvingInterval = 210000;
         

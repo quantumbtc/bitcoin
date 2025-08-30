@@ -30,7 +30,7 @@ public:
     uint32_t nBits;
     uint32_t nNonce;
 
-    std::vector<unsigned char> vchPowSolution; // packed ternary (2 bits/entry)
+
     
 
     CBlockHeader()
@@ -40,7 +40,6 @@ public:
     
     SERIALIZE_METHODS(CBlockHeader, obj) {
         READWRITE(obj.nVersion, obj.hashPrevBlock, obj.hashMerkleRoot, obj.nTime, obj.nBits, obj.nNonce);
-        READWRITE(obj.vchPowSolution);
     }
     //SERIALIZE_METHODS(CBlockHeader, obj) { READWRITE(obj.nVersion, obj.hashPrevBlock, obj.hashMerkleRoot, obj.nTime, obj.nBits, obj.nNonce); }
 
@@ -118,7 +117,7 @@ public:
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
-        block.vchPowSolution = vchPowSolution;
+
         return block;
     }
 

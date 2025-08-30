@@ -152,15 +152,7 @@ struct Params {
         return std::numeric_limits<int>::max();
     }
 
-        // 混合POW算法参数：传统哈希 + 抗量子算法
-        // 抗量子POW参数
-        uint32_t quantum_n = 256;         // 多项式次数
-        uint32_t quantum_q = 12289;       // 模数
-        uint32_t quantum_p = 3;           // 小模数
-        uint32_t quantum_d = 64;          // 稀疏度参数
-        double quantum_l2_threshold = 100.0;    // L2范数阈值
-        int32_t quantum_linf_threshold = 50;    // L∞范数阈值
-        uint32_t quantum_max_density = 128;     // 最大非零系数数量
+
     
 };
 

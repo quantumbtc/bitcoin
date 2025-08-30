@@ -21,9 +21,6 @@
 #include <cmath>
 #include <limits>
 
-// 混合POW算法：传统哈希 + 抗量子算法
-#include "pow_hybrid.h"
-
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader* pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
@@ -94,20 +91,15 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
     return bnNew.GetCompact();
 }
 
-// 混合POW验证：传统哈希 + 抗量子算法
+// 传统比特币POW验证
 bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params)
 {
     if (EnableFuzzDeterminism()) return (block.GetHash().data()[31] & 0x80) == 0;
     
-    // 第一步：验证传统比特币POW哈希
+    // 验证传统比特币POW哈希
     auto bnTarget{DeriveTarget(block.nBits, params.powLimit)};
     if (!bnTarget) {
         std::cout << "bnTarget 验证失败: params " << params.powLimit.ToString() << ",nBits " << block.nBits << std::endl;
-        return false;
-    }
-    
-    // 第二步：验证抗量子POW解
-    if (!CheckHybridProofOfWork(block, params)) {
         return false;
     }
     

@@ -25,7 +25,7 @@
 #include <node/warnings.h>
 #include <policy/ephemeral_policy.h>
 #include <pow.h>
-#include <pow_hybrid.h>
+
 #include <rpc/blockchain.h>
 #include <rpc/mining.h>
 #include <thread>
@@ -143,27 +143,24 @@ static bool GenerateBlock(ChainstateManager& chainman, CBlock&& block, uint64_t&
     block_out.reset();
     block.hashMerkleRoot = BlockMerkleRoot(block);
 
-    // 混合POW挖矿：传统哈希 + 抗量子算法
+    // 传统比特币POW挖矿
     const Consensus::Params& consensus = chainman.GetConsensus();
     
     while (max_tries > 0 && block.nNonce < std::numeric_limits<uint32_t>::max() && !chainman.m_interrupt) {
-        // 尝试生成抗量子POW解
-        if (GenerateHybridProofOfWork(block, consensus)) {
-            // 验证混合POW
-            if (CheckProofOfWork(block.GetBlockHeader(), consensus)) {
-                block_out = std::make_shared<const CBlock>(std::move(block));
-                
-                if (!process_new_block) return true;
-                
-                if (!chainman.ProcessNewBlock(block_out, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr)) {
-                    throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
-                }
-                
-                return true;
+        // 验证传统POW
+        if (CheckProofOfWork(block.GetBlockHeader(), consensus)) {
+            block_out = std::make_shared<const CBlock>(std::move(block));
+            
+            if (!process_new_block) return true;
+            
+            if (!chainman.ProcessNewBlock(block_out, /*force_processing=*/true, /*min_pow_checked=*/true, nullptr)) {
+                throw JSONRPCError(RPC_INTERNAL_ERROR, "ProcessNewBlock, block not accepted");
             }
+            
+            return true;
         }
         
-        // 如果抗量子解生成失败或验证失败，尝试下一个nonce
+        // 尝试下一个nonce
         ++block.nNonce;
         --max_tries;
     }
@@ -1108,18 +1105,8 @@ static RPCHelpMan getblocktemplate()
         result.pushKV("default_witness_commitment", HexStr(block_template->getCoinbaseCommitment()));
     }
 
-    // 混合POW算法：传统哈希 + 抗量子算法
-    UniValue hybrid(UniValue::VOBJ);
-    hybrid.pushKV("n", (int)consensusParams.quantum_n);
-    hybrid.pushKV("q", (int)consensusParams.quantum_q);
-    hybrid.pushKV("p", (int)consensusParams.quantum_p);
-    hybrid.pushKV("d", (int)consensusParams.quantum_d);
-    hybrid.pushKV("l2_threshold", consensusParams.quantum_l2_threshold);
-    hybrid.pushKV("linf_threshold", (int)consensusParams.quantum_linf_threshold);
-    hybrid.pushKV("max_density", (int)consensusParams.quantum_max_density);
-    
-    result.pushKV("pow_type", "hybrid_sha256d_quantum");
-    result.pushKV("hybrid", hybrid);
+    // 传统比特币POW算法
+    result.pushKV("pow_type", "sha256d");
 
     return result;
 },
