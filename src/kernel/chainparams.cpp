@@ -76,7 +76,7 @@ static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }
 
-static const int NUM_THREADS = 1; // std::thread::hardware_concurrency();
+static const int NUM_THREADS =  std::thread::hardware_concurrency();
 static std::atomic<bool> found(false);
 static std::atomic<uint64_t> totalTries(0);
 static std::mutex printMutex;
@@ -184,45 +184,45 @@ public:
 
 
        
-        //std::cout << "Starting genesis miner with " << NUM_THREADS << " threads..." << std::endl;
+        std::cout << "Starting genesis miner with " << NUM_THREADS << " threads..." << std::endl;
 
-        //std::vector<std::thread> threads;
-        //for (int i = 0; i < NUM_THREADS; i++) {
-        //    threads.emplace_back(MineGenesis, std::ref(consensus), i, NUM_THREADS);
-        //}
+        std::vector<std::thread> threads;
+        for (int i = 0; i < NUM_THREADS; i++) {
+            threads.emplace_back(MineGenesis, std::ref(consensus), i, NUM_THREADS);
+        }
 
-        //// 进度显示线程
-        //std::thread progress([&]() {
-        //    uint64_t lastTries = 0;
-        //    auto lastTime = std::chrono::steady_clock::now();
+        // 进度显示线程
+        std::thread progress([&]() {
+            uint64_t lastTries = 0;
+            auto lastTime = std::chrono::steady_clock::now();
 
-        //    while (!found.load()) {
-        //        std::this_thread::sleep_for(std::chrono::seconds(5));
+            while (!found.load()) {
+                std::this_thread::sleep_for(std::chrono::seconds(5));
 
-        //        uint64_t currentTries = totalTries.load();
-        //        auto now = std::chrono::steady_clock::now();
-        //        std::chrono::duration<double> elapsed = now - lastTime;
+                uint64_t currentTries = totalTries.load();
+                auto now = std::chrono::steady_clock::now();
+                std::chrono::duration<double> elapsed = now - lastTime;
 
-        //        uint64_t diff = currentTries - lastTries;
-        //        double rate = diff / elapsed.count(); // H/s
+                uint64_t diff = currentTries - lastTries;
+                double rate = diff / elapsed.count(); // H/s
 
-        //        // 粗略 ETA （假设平均需要 powLimit/2 次）
-        //        double est_total = static_cast<double>(std::numeric_limits<uint64_t>::max()); // 假设搜索空间大小
-        //        double est_remaining = (est_total - currentTries) / (rate > 0 ? rate : 1);
+                // 粗略 ETA （假设平均需要 powLimit/2 次）
+                double est_total = static_cast<double>(std::numeric_limits<uint64_t>::max()); // 假设搜索空间大小
+                double est_remaining = (est_total - currentTries) / (rate > 0 ? rate : 1);
 
-        //        std::lock_guard<std::mutex> lock(printMutex);
-        //        std::cout << "[Progress] Tried: " << currentTries
-        //                  << " | Rate: " << std::fixed << std::setprecision(2) << rate << " H/s"
-        //                  << " | ETA: " << (est_remaining / 60.0) << " min" << std::endl;
+                std::lock_guard<std::mutex> lock(printMutex);
+                std::cout << "[Progress] Tried: " << currentTries
+                          << " | Rate: " << std::fixed << std::setprecision(2) << rate << " H/s"
+                          << " | ETA: " << (est_remaining / 60.0) << " min" << std::endl;
 
-        //        lastTries = currentTries;
-        //        lastTime = now;
-        //    }
-        //});
+                lastTries = currentTries;
+                lastTime = now;
+            }
+        });
 
-        //for (auto& t : threads)
-        //    t.join();
-        //progress.join();
+        for (auto& t : threads)
+            t.join();
+        progress.join();
 
 
         consensus.hashGenesisBlock = genesis.GetHash();
