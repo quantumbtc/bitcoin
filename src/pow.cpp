@@ -102,8 +102,8 @@ bool CheckProofOfWork(const CBlockHeader& block, const Consensus::Params& params
         std::cout << "bnTarget 验证失败: params " << params.powLimit.ToString() << ",nBits " << block.nBits << std::endl;
         return false;
     }
-    
-    return true;
+
+    return CheckProofOfWorkImpl(block.GetHash(), block.nBits, params);
 }
 
 std::optional<arith_uint256> DeriveTarget(unsigned int nBits, const uint256 pow_limit)
